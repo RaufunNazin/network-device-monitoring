@@ -2,3 +2,5 @@
 -- Update VENDOR_COMMANDS to telnet_commands
 -- Update INSTANT_CLIENT_LOC to ORACLE_IC
 -- Update index_decoder to index_decoders
+
+-- Update API overview in README.md
