@@ -4,10 +4,10 @@ def format_raw_values(value, value_type):
   """
   Format the value based on its type
   Args:
-      value: The value to format.
-      value_type (str): The type of the value (e.g., OCTETSTRING, INTEGER).
+    value: The value to format.
+    value_type (str): The type of the value (e.g., OCTETSTRING, INTEGER).
   Returns:
-      str: The formatted value as a string.
+    str: The formatted value as a string.
   """
   if value_type == OCTETSTRING:
     decoded_value = value.prettyPrint()
