@@ -8,6 +8,8 @@ from constants import mib_map
 from snmp_session import get_snmp_session
 from dictionaries.oid_dict import oid_dictionary
 from parsers.raw_value_parser import format_raw_values
+import cx_Oracle
+from datetime import datetime
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -248,3 +250,185 @@ async def get_olt_information(
     print(f"Elapsed time: {end_time - start_time:.2f} seconds")
     print(f"SNMP {action_description} completed. Processed {len(result)} entries.")
     return result
+
+def insert_into_db(onu_data, ip, db_host, db_port, db_user, db_pass, db_sid):
+    """
+    Insert ONU data into the Oracle database.
+
+    Args:
+        onu_data (dict): Dictionary containing ONU data with keys like 'MAC', 'SLNO', 'STATUS', etc.
+        ip (str): IP address of the switch to retrieve the switch ID.
+        db_host (str): Database host.
+        db_port (int): Database port.
+        db_user (str): Database username.
+        db_pass (str): Database password.
+        db_sid (str): Database SID.
+
+    Returns:
+        bool: True if insertion was successful, False otherwise.
+    """
+    dsn_tns = cx_Oracle.makedsn(db_host, db_port, sid=db_sid)
+
+    try:
+        connection = cx_Oracle.connect(db_user, db_pass, dsn_tns)
+        cursor = connection.cursor()
+
+        print(f"Connected to Oracle Database.")
+
+        try:
+            cursor.execute("SELECT ID FROM SWITCHES WHERE IP = :ip", {"ip": ip})
+            result = cursor.fetchone()
+            sw_id = result[0] if result else None
+            if sw_id:
+                print(f"Retrieved switch ID {sw_id} from SWITCHES table for IP {ip}")
+            else:
+                print(
+                    f"Warning: No switch found with IP {ip} in SWITCHES table. SW_ID will be set to NULL."
+                )
+        except cx_Oracle.DatabaseError as e:
+            (error,) = e.args
+            print(f"Error retrieving switch ID from SWITCHES table: {error.message}")
+            sw_id = None
+
+        for index, data in onu_data.items():
+            data["SW_ID"] = sw_id
+
+        current_time = datetime.now()
+
+        for index, data in onu_data.items():
+            cursor.execute("SELECT SWITCH_SNMP_ONU_PORTS_sq.nextval FROM DUAL")
+            _id = cursor.fetchone()[0]
+            data.setdefault("MAC", None)
+            data.setdefault("POWER", None)
+            data.setdefault("STATUS", None)
+            data.setdefault("IFDESCR", None)
+            data.setdefault("PORTNO", None)
+            data.setdefault("IFINDEX", None)
+            data.setdefault("ONU_PORT", None)
+            data.setdefault("PON_PORT", None)
+            data.setdefault("PARENT_ID", None)
+            data.setdefault("SLNO", None)
+            data.setdefault("DISTANCE", None)
+            data.setdefault("UP_SINCE", None)
+            data.setdefault("ONU_MODEL", None)
+            data.setdefault("ONU_VENDOR", None)
+            data.setdefault("IFINDEX2", None)
+
+            cursor.execute(
+                """
+            INSERT INTO SWITCH_SNMP_ONU_PORTS 
+            (ID, PORT_ID, MAC, POWER, STATUS, IFDESCR, PORTNO, SW_ID, IFINDEX, 
+            UDATE, ONU_PORT, PON_PORT, PARENT_ID, SLNO, DISTANCE, UP_SINCE, ONU_MODEL, ONU_VENDOR, IFINDEX2)
+            VALUES 
+            (:id, :port_id, :mac, :power, :status, :ifdescr, :portno, :sw_id, :ifindex,
+            :udate, :onu_port, :pon_port, :parent_id, :slno, :distance, :up_since, :onu_model, :onu_vendor, :ifindex2)
+            """,
+                {
+                    "id": _id,
+                    "port_id": None,
+                    "mac": data["MAC"],
+                    "power": data["POWER"],
+                    "status": data["STATUS"],
+                    "ifdescr": data["IFDESCR"],
+                    "portno": data["PORTNO"],
+                    "sw_id": sw_id,
+                    "ifindex": data["IFINDEX"],
+                    "udate": current_time,
+                    "onu_port": data["ONU_PORT"],
+                    "pon_port": data["PON_PORT"],
+                    "parent_id": data["PARENT_ID"],
+                    "slno": data["SLNO"],
+                    "distance": data["DISTANCE"],
+                    "up_since": data["UP_SINCE"],
+                    "onu_model": data["ONU_MODEL"],
+                    "onu_vendor": data["ONU_VENDOR"],
+                    "ifindex2": data["IFINDEX2"],
+                },
+            )
+
+            connection.commit()
+            print(f"Inserted record for ONU {index} with ID {_id} with {sw_id}")
+
+        print(f"Successfully inserted {len(onu_data)} ONU records into the database.")
+
+    except cx_Oracle.DatabaseError as e:
+        (error,) = e.args
+        print(f"Database error: {error.message}")
+        return False
+    finally:
+        if "connection" in locals():
+            connection.close()
+
+    return True
+
+
+def insert_into_db_olt_customer_mac(
+    onu_data, ip, db_host, db_port, db_user, db_pass, db_sid
+):
+    dsn_tns = cx_Oracle.makedsn(db_host, db_port, sid=db_sid)
+
+    try:
+        connection = cx_Oracle.connect(db_user, db_pass, dsn_tns)
+        cursor = connection.cursor()
+
+        print(f"Connected to Oracle Database.")
+
+        try:
+            cursor.execute("SELECT ID FROM SWITCHES WHERE IP = :ip", {"ip": ip})
+            result = cursor.fetchone()
+            olt_id = result[0] if result else None
+            if olt_id:
+                print(f"Retrieved OLT ID {olt_id} from SWITCHES table for IP {ip}")
+            else:
+                print(
+                    f"Warning: No OLT found with IP {ip} in SWITCHES table. SW_ID will be set to NULL."
+                )
+        except cx_Oracle.DatabaseError as e:
+            (error,) = e.args
+            print(f"Error retrieving OLT ID from SWITCHES table: {error.message}")
+            olt_id = None
+
+        for index, data in enumerate(onu_data):
+            data["OLT_ID"] = olt_id
+
+        current_time = datetime.now()
+
+        for index, data in enumerate(onu_data):
+            cursor.execute("SELECT OLT_CUSTOMER_MAC_sq.nextval FROM DUAL")
+            _id = cursor.fetchone()[0]
+            data.setdefault("OLT_ID", None)
+            data.setdefault("VLAN", None)
+            data.setdefault("Port", None)
+            data.setdefault("MAC", None)
+            data.setdefault("udate", None)
+
+            cursor.execute(
+                """
+            INSERT INTO OLT_CUSTOMER_MAC 
+            (ID, OLT_ID, VLAN, PORT, MAC, UDATE)
+            VALUES 
+            (:id, :olt_id, :vlan, :port, :mac, :udate)
+            """,
+                {
+                    "id": _id,
+                    "olt_id": data["OLT_ID"],
+                    "vlan": data["VLAN"],
+                    "port": data["Port"],
+                    "mac": data["MAC"],
+                    "udate": current_time,
+                },
+            )
+
+            connection.commit()
+            print(f"Inserted record for ONU {index} with ID {_id} with {olt_id}")
+
+        print(f"Successfully inserted {len(onu_data)} ONU records into the database.")
+
+    except cx_Oracle.DatabaseError as e:
+        (error,) = e.args
+        print(f"Database error: {error.message}")
+        return False
+    finally:
+        if "connection" in locals():
+            connection.close()
+    return True
