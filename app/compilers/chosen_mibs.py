@@ -7,7 +7,7 @@ from pysmi.writer import PyFileWriter
 from pysmi.parser import SmiStarParser
 from pysmi.codegen import PySnmpCodeGen
 from pysmi.compiler import MibCompiler
-from enums import MIBS, COMPILED_MIBS
+from ..enums import MIBS, COMPILED_MIBS
 
 def setup_logging(debug_mode):
     """Sets up logging for pysmi."""

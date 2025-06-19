@@ -1,4 +1,4 @@
-from enums import SLOT_ID, CARD_ID, PON_ID, ONU_ID
+from ..enums import SLOT_ID, CARD_ID, PON_ID, ONU_ID
 
 def decode_cdata_epon(device_id):
   slot = (device_id >> 24) & 0xFF
