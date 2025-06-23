@@ -251,6 +251,7 @@ async def get_olt_information(
     print(f"SNMP {action_description} completed. Processed {len(result)} entries.")
     return result
 
+
 def insert_into_db(onu_data, ip, db_host, db_port, db_user, db_pass, db_sid):
     """
     Insert ONU data into the Oracle database.
@@ -304,8 +305,6 @@ def insert_into_db(onu_data, ip, db_host, db_port, db_user, db_pass, db_sid):
             data.setdefault("IFDESCR", None)
             data.setdefault("PORTNO", None)
             data.setdefault("IFINDEX", None)
-            data.setdefault("ONU_PORT", None)
-            data.setdefault("PON_PORT", None)
             data.setdefault("PARENT_ID", None)
             data.setdefault("SLNO", None)
             data.setdefault("DISTANCE", None)
@@ -318,10 +317,10 @@ def insert_into_db(onu_data, ip, db_host, db_port, db_user, db_pass, db_sid):
                 """
             INSERT INTO SWITCH_SNMP_ONU_PORTS 
             (ID, PORT_ID, MAC, POWER, STATUS, IFDESCR, PORTNO, SW_ID, IFINDEX, 
-            UDATE, ONU_PORT, PON_PORT, PARENT_ID, SLNO, DISTANCE, UP_SINCE, ONU_MODEL, ONU_VENDOR, IFINDEX2)
+            UDATE, PARENT_ID, SLNO, DISTANCE, UP_SINCE, ONU_MODEL, ONU_VENDOR, IFINDEX2)
             VALUES 
             (:id, :port_id, :mac, :power, :status, :ifdescr, :portno, :sw_id, :ifindex,
-            :udate, :onu_port, :pon_port, :parent_id, :slno, :distance, :up_since, :onu_model, :onu_vendor, :ifindex2)
+            :udate, :parent_id, :slno, :distance, :up_since, :onu_model, :onu_vendor, :ifindex2)
             """,
                 {
                     "id": _id,
@@ -334,8 +333,6 @@ def insert_into_db(onu_data, ip, db_host, db_port, db_user, db_pass, db_sid):
                     "sw_id": sw_id,
                     "ifindex": data["IFINDEX"],
                     "udate": current_time,
-                    "onu_port": data["ONU_PORT"],
-                    "pon_port": data["PON_PORT"],
                     "parent_id": data["PARENT_ID"],
                     "slno": data["SLNO"],
                     "distance": data["DISTANCE"],
