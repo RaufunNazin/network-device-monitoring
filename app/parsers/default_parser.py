@@ -1,4 +1,4 @@
-from enums import (
+from ..enums import (
     BDCOM_EPON,
     BDCOM_GPON,
     CDATA_EPON,
