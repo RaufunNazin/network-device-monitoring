@@ -1,5 +1,5 @@
-COMPILED_MIBS = "compiled_mibs"
-MIBS = "mibs"
+COMPILED_MIBS = "app/compiled_mibs"
+MIBS = "app/mibs"
 
 MAC = "MAC"
 OPERATION_STATUS = "OPERATION_STATUS"

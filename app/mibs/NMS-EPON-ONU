@@ -2,21 +2,17 @@ NMS-EPON-ONU DEFINITIONS ::= BEGIN
 
     IMPORTS
         llidIfIndex
-        FROM NMS-EPON-LLID
-        Counter, IpAddress, Counter
-        FROM RFC1155-SMI
-        OBJECT-TYPE,BITS
-        FROM SNMPv2-SMI
-        OBJECT-TYPE
-        FROM RFC-1212
-                DisplayString
-        FROM RFC1213-MIB
-        nmsEPONGroup
-        FROM NMS-SMI
-        TruthValue,RowStatus,PhysAddress,DisplayString,MacAddress,IpAddress
+            FROM NMS-EPON-LLID
+        Counter32, IpAddress
+            FROM SNMPv2-SMI
+        OBJECT-TYPE, BITS
+            FROM SNMPv2-SMI
+        DisplayString, TruthValue, RowStatus, PhysAddress, MacAddress
             FROM SNMPv2-TC
         InetAddressIPv6
-            FROM INET-ADDRESS-MIB;
+            FROM INET-ADDRESS-MIB
+        nmsEPONGroup
+            FROM NMS-SMI;
           
                nmsEponOnu         OBJECT IDENTIFIER ::= { nmsEPONGroup 10 }
                
@@ -935,6 +931,13 @@ NMS-EPON-ONU DEFINITIONS ::= BEGIN
                    ::= { nmsEponOnuEntry 79 } 
                    
 
+                onuAliveTime OBJECT-TYPE
+                    SYNTAX  INTEGER
+                    MAX-ACCESS  read-only
+                    STATUS  mandatory
+                    DESCRIPTION
+                            "Onu Up Since Time."
+                    ::= { nmsEponOnuEntry 80 } 
                  
 
 

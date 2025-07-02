@@ -8,9 +8,9 @@
 # Notes
 # -----
 # ASN.1 source file://app/mibs/V1600G
-# Produced by pysmi-1.6.1 at Thu Jun 19 14:04:03 2025
-# On host user-HP platform Linux version 6.11.0-26-generic by user user
-# Using Python version 3.12.3 (main, May 26 2025, 18:50:19) [GCC 13.3.0]
+# Produced by pysmi-1.6.1 at Wed Jul  2 15:33:49 2025
+# On host user-HP platform Linux version 6.11.0-28-generic by user user
+# Using Python version 3.12.3 (main, Jun 18 2025, 17:59:45) [GCC 13.3.0]
 
 if 'mibBuilder' not in globals():
     import sys
@@ -122,6 +122,105 @@ _Devices_ObjectIdentity = ObjectIdentity
 devices = _Devices_ObjectIdentity(
     (1, 3, 6, 1, 4, 1, 37950, 1, 1)
 )
+_V1600d_ObjectIdentity = ObjectIdentity
+v1600d = _V1600d_ObjectIdentity(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5)
+)
+_V1600dSwitch_ObjectIdentity = ObjectIdentity
+v1600dSwitch = _V1600dSwitch_ObjectIdentity(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10)
+)
+_V1600dMacAddr_ObjectIdentity = ObjectIdentity
+v1600dMacAddr = _V1600dMacAddr_ObjectIdentity(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3)
+)
+_MacFlappingTable_Object = MibTable
+macFlappingTable = _MacFlappingTable_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5)
+)
+if mibBuilder.loadTexts:
+    macFlappingTable.setStatus("current")
+_MacFlappingEntry_Object = MibTableRow
+macFlappingEntry = _MacFlappingEntry_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5, 1)
+)
+macFlappingEntry.setIndexNames(
+    (0, "V1600G", "macFlappingindex"),
+)
+if mibBuilder.loadTexts:
+    macFlappingEntry.setStatus("current")
+_MacFlappingindex_Type = Integer32
+_MacFlappingindex_Object = MibTableColumn
+macFlappingindex = _MacFlappingindex_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5, 1, 1),
+    _MacFlappingindex_Type()
+)
+macFlappingindex.setMaxAccess("read-only")
+if mibBuilder.loadTexts:
+    macFlappingindex.setStatus("current")
+_MacFlappingMacAddr_Type = OctetString
+_MacFlappingMacAddr_Object = MibTableColumn
+macFlappingMacAddr = _MacFlappingMacAddr_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5, 1, 2),
+    _MacFlappingMacAddr_Type()
+)
+macFlappingMacAddr.setMaxAccess("read-only")
+if mibBuilder.loadTexts:
+    macFlappingMacAddr.setStatus("current")
+_MacFlappingVlanId_Type = Integer32
+_MacFlappingVlanId_Object = MibTableColumn
+macFlappingVlanId = _MacFlappingVlanId_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5, 1, 3),
+    _MacFlappingVlanId_Type()
+)
+macFlappingVlanId.setMaxAccess("read-only")
+if mibBuilder.loadTexts:
+    macFlappingVlanId.setStatus("current")
+_MacFlappingSourcePort_Type = OctetString
+_MacFlappingSourcePort_Object = MibTableColumn
+macFlappingSourcePort = _MacFlappingSourcePort_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5, 1, 4),
+    _MacFlappingSourcePort_Type()
+)
+macFlappingSourcePort.setMaxAccess("read-only")
+if mibBuilder.loadTexts:
+    macFlappingSourcePort.setStatus("current")
+_MacFlappingCurrentPort_Type = OctetString
+_MacFlappingCurrentPort_Object = MibTableColumn
+macFlappingCurrentPort = _MacFlappingCurrentPort_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5, 1, 5),
+    _MacFlappingCurrentPort_Type()
+)
+macFlappingCurrentPort.setMaxAccess("read-only")
+if mibBuilder.loadTexts:
+    macFlappingCurrentPort.setStatus("current")
+_MacFlappingBeginTime_Type = OctetString
+_MacFlappingBeginTime_Object = MibTableColumn
+macFlappingBeginTime = _MacFlappingBeginTime_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5, 1, 6),
+    _MacFlappingBeginTime_Type()
+)
+macFlappingBeginTime.setMaxAccess("read-only")
+if mibBuilder.loadTexts:
+    macFlappingBeginTime.setStatus("current")
+_MacFlappingLastTime_Type = OctetString
+_MacFlappingLastTime_Object = MibTableColumn
+macFlappingLastTime = _MacFlappingLastTime_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5, 1, 7),
+    _MacFlappingLastTime_Type()
+)
+macFlappingLastTime.setMaxAccess("read-only")
+if mibBuilder.loadTexts:
+    macFlappingLastTime.setStatus("current")
+_MacFlappingTimes_Type = OctetString
+_MacFlappingTimes_Object = MibTableColumn
+macFlappingTimes = _MacFlappingTimes_Object(
+    (1, 3, 6, 1, 4, 1, 37950, 1, 1, 5, 10, 3, 5, 1, 8),
+    _MacFlappingTimes_Type()
+)
+macFlappingTimes.setMaxAccess("read-only")
+if mibBuilder.loadTexts:
+    macFlappingTimes.setStatus("current")
 _V1600g_ObjectIdentity = ObjectIdentity
 v1600g = _V1600g_ObjectIdentity(
     (1, 3, 6, 1, 4, 1, 37950, 1, 1, 6)
@@ -33126,6 +33225,19 @@ mibBuilder.exportSymbols(
     **{"vsolution": vsolution,
        "business": business,
        "devices": devices,
+       "v1600d": v1600d,
+       "v1600dSwitch": v1600dSwitch,
+       "v1600dMacAddr": v1600dMacAddr,
+       "macFlappingTable": macFlappingTable,
+       "macFlappingEntry": macFlappingEntry,
+       "macFlappingindex": macFlappingindex,
+       "macFlappingMacAddr": macFlappingMacAddr,
+       "macFlappingVlanId": macFlappingVlanId,
+       "macFlappingSourcePort": macFlappingSourcePort,
+       "macFlappingCurrentPort": macFlappingCurrentPort,
+       "macFlappingBeginTime": macFlappingBeginTime,
+       "macFlappingLastTime": macFlappingLastTime,
+       "macFlappingTimes": macFlappingTimes,
        "v1600g": v1600g,
        "v1600gOnu": v1600gOnu,
        "gOnuAuthList": gOnuAuthList,

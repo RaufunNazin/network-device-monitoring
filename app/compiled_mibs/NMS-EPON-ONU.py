@@ -8,9 +8,9 @@
 # Notes
 # -----
 # ASN.1 source file://app/mibs/NMS-EPON-ONU
-# Produced by pysmi-1.6.1 at Thu Jun 19 14:04:00 2025
-# On host user-HP platform Linux version 6.11.0-26-generic by user user
-# Using Python version 3.12.3 (main, May 26 2025, 18:50:19) [GCC 13.3.0]
+# Produced by pysmi-1.6.1 at Wed Jul  2 15:33:46 2025
+# On host user-HP platform Linux version 6.11.0-28-generic by user user
+# Using Python version 3.12.3 (main, Jun 18 2025, 17:59:45) [GCC 13.3.0]
 
 if 'mibBuilder' not in globals():
     import sys
@@ -102,7 +102,6 @@ if 'mibBuilder' not in globals():
     "iso")
 
 (DisplayString,
- IpAddress,
  MacAddress,
  PhysAddress,
  RowStatus,
@@ -110,7 +109,6 @@ if 'mibBuilder' not in globals():
  TruthValue) = mibBuilder.importSymbols(
     "SNMPv2-TC",
     "DisplayString",
-    "IpAddress",
     "MacAddress",
     "PhysAddress",
     "RowStatus",
@@ -1273,6 +1271,15 @@ onuConfigurablePortDiid = _OnuConfigurablePortDiid_Object(
 onuConfigurablePortDiid.setMaxAccess("read-only")
 if mibBuilder.loadTexts:
     onuConfigurablePortDiid.setStatus("mandatory")
+_OnuAliveTime_Type = Integer32
+_OnuAliveTime_Object = MibScalar
+onuAliveTime = _OnuAliveTime_Object(
+    (1, 3, 6, 1, 4, 1, 3320, 101, 10, 1, 1, 80),
+    _OnuAliveTime_Type()
+)
+onuAliveTime.setMaxAccess("read-only")
+if mibBuilder.loadTexts:
+    onuAliveTime.setStatus("mandatory")
 _NmsepononuPonSwitchTable_Object = MibTable
 nmsepononuPonSwitchTable = _NmsepononuPonSwitchTable_Object(
     (1, 3, 6, 1, 4, 1, 3320, 101, 10, 2)
@@ -2309,6 +2316,7 @@ mibBuilder.exportSymbols(
        "onuPeerPONDiid": onuPeerPONDiid,
        "onuPeerPONMAC": onuPeerPONMAC,
        "onuConfigurablePortDiid": onuConfigurablePortDiid,
+       "onuAliveTime": onuAliveTime,
        "nmsepononuPonSwitchTable": nmsepononuPonSwitchTable,
        "nmsEponOnuPonSwitchEntry": nmsEponOnuPonSwitchEntry,
        "ifIndex": ifIndex,
