@@ -4,10 +4,10 @@ from pysnmp.smi import builder, view
 import time
 import os
 from .enums import MIBS, COMPILED_MIBS
-from constants import mib_map
-from snmp_session import get_snmp_session
-from dictionaries.oid_dict import oid_dictionary
-from parsers.raw_value_parser import format_raw_values
+from .constants import mib_map
+from .snmp_session import get_snmp_session
+from .dictionaries.oid_dict import oid_dictionary
+from .parsers.raw_value_parser import format_raw_values
 import cx_Oracle
 from datetime import datetime
 

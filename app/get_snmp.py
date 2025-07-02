@@ -8,6 +8,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
+from .constants import branches, supported_brands
 from .enums import (
     ADMIN_STATUS,
     ADMIN_STATUS_DB,
@@ -316,26 +317,6 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None):
 
 
 async def main():
-    branches = {
-        "MAC": MAC,
-        "OPERATION_STATUS": OPERATION_STATUS,
-        "ADMIN_STATUS": ADMIN_STATUS,
-        "DISTANCE": DISTANCE,
-        "UP_SINCE": UP_SINCE,
-        "VENDOR": VENDOR,
-        "MODEL": MODEL,
-        "SERIAL_NO": SERIAL_NO,
-        "POWER": POWER,
-        "DESC": DESC,
-    }
-    supported_brands = {
-        CDATA_EPON: CDATA_EPON,
-        CDATA_GPON: CDATA_GPON,
-        VSOL_EPON: VSOL_EPON,
-        VSOL_GPON: VSOL_GPON,
-        BDCOM_EPON: BDCOM_EPON,
-        BDCOM_GPON: BDCOM_GPON,
-    }
     parser = argparse.ArgumentParser(description="SNMP OLT Information Retriever")
     parser.add_argument("-i", required=True, help="Target OLT IP address or hostname")
     parser.add_argument(
