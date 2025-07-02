@@ -3,7 +3,7 @@ from pysnmp.hlapi.v3arch.asyncio import *
 from pysnmp.smi import builder, view
 import time
 import os
-from .enums import COMPILED_MIBS
+from .enums import MIBS, COMPILED_MIBS
 from constants import mib_map
 from snmp_session import get_snmp_session
 from dictionaries.oid_dict import oid_dictionary
@@ -42,7 +42,7 @@ def load_mibs(brand):
     else:
         raise FileNotFoundError(f"Compiled MIB path not found: {compiled_mib_dir}")
 
-    source_mib_dir = "mibs"
+    source_mib_dir = MIBS
     if os.path.exists(source_mib_dir):
         mib_builder.add_mib_sources(builder.DirMibSource(source_mib_dir))
 
@@ -109,6 +109,7 @@ async def get_olt_information(
 
     action_description = ""
 
+    # GET operation section (no changes here)
     if onu_index_str:
         if all_oid:
             action_description = (
@@ -119,11 +120,14 @@ async def get_olt_information(
             object_types_to_fetch = []
             for current_branch_key, brand_map in oid_dictionary.items():
                 if brand in brand_map:
-                    base_oid_for_branch = brand_map[brand]
-                    oid_to_query_for_branch = f"{base_oid_for_branch}.{onu_index_str}"
-                    object_types_to_fetch.append(
-                        ObjectType(ObjectIdentity(oid_to_query_for_branch))
-                    )
+                    base_oid_for_branch = brand_map.get(brand)  # Use .get for safety
+                    if base_oid_for_branch:  # Check if OID is not empty
+                        oid_to_query_for_branch = (
+                            f"{base_oid_for_branch}.{onu_index_str}"
+                        )
+                        object_types_to_fetch.append(
+                            ObjectType(ObjectIdentity(oid_to_query_for_branch))
+                        )
                 else:
                     msg = f"Info: OID for branch '{current_branch_key}' with brand '{brand}' not found in dictionary. Skipping for index {onu_index_str}."
                     result.append(msg)
@@ -137,7 +141,6 @@ async def get_olt_information(
                 errorIndication, errorStatus, errorIndex, varBinds = await get_cmd(
                     snmp_engine, community, transport, context, *object_types_to_fetch
                 )
-
                 if errorIndication:
                     result.append(f"Error during bulk SNMP GET: {errorIndication}")
                 elif errorStatus:
@@ -147,7 +150,6 @@ async def get_olt_information(
                     ):
                         failed_oid_object = object_types_to_fetch[int(errorIndex) - 1]
                         failed_oid_str = str(failed_oid_object[0])
-
                     result.append(
                         f"SNMP Error during bulk GET: {errorStatus.prettyPrint()} (at OID like {failed_oid_str}, errorIndex: {errorIndex})"
                     )
@@ -164,7 +166,6 @@ async def get_olt_information(
                             value_val, type(value_val).__name__.upper()
                         )
                         result.append(f"{symbolic_oid} = {formatted_value}")
-
         else:
             action_description = (
                 f"GET for branch '{branch}' (index: {onu_index_str}, brand: {brand})"
@@ -176,7 +177,6 @@ async def get_olt_information(
             else:
                 oid_to_query = f"{oid_dictionary[branch][brand]}.{onu_index_str}"
                 print(f"Starting {action_description}, OID: {oid_to_query}")
-
                 errorIndication, errorStatus, errorIndex, varBinds = await get_cmd(
                     snmp_engine,
                     community,
@@ -184,7 +184,6 @@ async def get_olt_information(
                     context,
                     ObjectType(ObjectIdentity(oid_to_query)),
                 )
-
                 if errorIndication:
                     return [f"Error: {errorIndication}"]
                 elif errorStatus:
@@ -198,49 +197,119 @@ async def get_olt_information(
                     )
                     result.append(f"{symbolic_oid} = {formatted_value}")
 
+    # WALK section
     else:
         if all_oid:
-            print(
-                f"Warning: 'all_oid=True' is currently ignored for SNMP WALK operations (when no ONU index is provided). Performing standard walk for branch '{branch}'."
+            action_description = (
+                f"multi-branch WALK for all defined branches (brand: {brand})"
             )
+            print(f"Starting {action_description}")
 
-        action_description = f"WALK for branch '{branch}' (brand: {brand})"
-        if branch not in oid_dictionary or brand not in oid_dictionary[branch]:
-            error_msg = f"Error: OID for branch '{branch}' and brand '{brand}' not found in dictionary for walk."
-            print(f"{action_description} - {error_msg}")
-            result.append(error_msg)
-        else:
-            oid_to_walk = oid_dictionary[branch][brand]
-            print(f"Starting {action_description}, Base OID: {oid_to_walk}")
+            walks_performed = 0
+            for current_branch_key, brand_map in oid_dictionary.items():
+                if brand in brand_map:
+                    # Use .get() for safety and check if the result is a valid, non-empty string
+                    oid_to_walk = brand_map.get(brand)
 
-            objects_to_walk = walk_cmd(
-                snmp_engine,
-                community,
-                transport,
-                context,
-                ObjectType(ObjectIdentity(oid_to_walk)),
-                lexicographicMode=False,
-            )
-
-            async for (
-                errorIndication,
-                errorStatus,
-                errorIndex,
-                varBinds,
-            ) in objects_to_walk:
-                if errorIndication:
-                    return [f"Error: {errorIndication}"]
-                elif errorStatus:
-                    return [
-                        f"SNMP Error: {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or '?'}"
-                    ]
-                else:
-                    for oid, value in varBinds:
-                        symbolic_oid = resolve_oid(oid, mib_view)
-                        formatted_value = format_raw_values(
-                            value, type(value).__name__.upper()
+                    # <-- MODIFICATION: Added validation for the OID -->
+                    if oid_to_walk:
+                        print(
+                            f"--- Walking branch '{current_branch_key}', Base OID: {oid_to_walk} ---"
                         )
-                        result.append(f"{symbolic_oid} = {formatted_value}")
+                        walks_performed += 1
+
+                        objects_to_walk = walk_cmd(
+                            snmp_engine,
+                            community,
+                            transport,
+                            context,
+                            ObjectType(ObjectIdentity(oid_to_walk)),
+                            lexicographicMode=False,
+                        )
+
+                        async for (
+                            errorIndication,
+                            errorStatus,
+                            errorIndex,
+                            varBinds,
+                        ) in objects_to_walk:
+                            if errorIndication:
+                                error_msg = f"Error for branch '{current_branch_key}': {errorIndication}"
+                                result.append(error_msg)
+                                print(error_msg)
+                                break
+                            elif errorStatus:
+                                error_msg = f"SNMP Error for branch '{current_branch_key}': {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or '?'}"
+                                result.append(error_msg)
+                                print(error_msg)
+                                break
+                            else:
+                                for oid, value in varBinds:
+                                    symbolic_oid = resolve_oid(oid, mib_view)
+                                    formatted_value = format_raw_values(
+                                        value, type(value).__name__.upper()
+                                    )
+                                    result.append(f"{symbolic_oid} = {formatted_value}")
+                    else:
+                        # This will now be printed if the OID is empty or None
+                        info_msg = f"Info: OID for branch '{current_branch_key}' with brand '{brand}' is empty. Skipping walk for this branch."
+                        print(info_msg)
+                else:
+                    info_msg = f"Info: OID for branch '{current_branch_key}' with brand '{brand}' not found. Skipping walk for this branch."
+                    print(info_msg)
+
+            if walks_performed == 0:
+                result.append(
+                    f"Error: No valid, non-empty OIDs found to walk for brand '{brand}'."
+                )
+
+        # Single branch walk section (no changes here)
+        else:
+            action_description = f"WALK for branch '{branch}' (brand: {brand})"
+            if not branch:
+                error_msg = "Error: A specific 'branch' must be provided for an SNMP WALK when 'all_oid' is False."
+                print(error_msg)
+                result.append(error_msg)
+            elif (
+                branch not in oid_dictionary
+                or brand not in oid_dictionary[branch]
+                or not oid_dictionary[branch][brand]
+            ):
+                error_msg = f"Error: OID for branch '{branch}' and brand '{brand}' not found or is empty."
+                print(f"{action_description} - {error_msg}")
+                result.append(error_msg)
+            else:
+                oid_to_walk = oid_dictionary[branch][brand]
+                print(f"Starting {action_description}, Base OID: {oid_to_walk}")
+
+                objects_to_walk = walk_cmd(
+                    snmp_engine,
+                    community,
+                    transport,
+                    context,
+                    ObjectType(ObjectIdentity(oid_to_walk)),
+                    lexicographicMode=False,
+                )
+
+                async for (
+                    errorIndication,
+                    errorStatus,
+                    errorIndex,
+                    varBinds,
+                ) in objects_to_walk:
+                    if errorIndication:
+                        return [f"Error: {errorIndication}"]
+                    elif errorStatus:
+                        return [
+                            f"SNMP Error: {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or '?'}"
+                        ]
+                    else:
+                        for oid, value in varBinds:
+                            symbolic_oid = resolve_oid(oid, mib_view)
+                            formatted_value = format_raw_values(
+                                value, type(value).__name__.upper()
+                            )
+                            result.append(f"{symbolic_oid} = {formatted_value}")
 
     end_time = time.time()
     print(f"Elapsed time: {end_time - start_time:.2f} seconds")
