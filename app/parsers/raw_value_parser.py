@@ -1,4 +1,18 @@
-from ..enums import OCTETSTRING, HEX_STRING, OID, OID_SHORT, GAUGE32, INTEGER, STRING, COUNTER32, COUNTER64, TIMETICKS, IPADDRESS, NULL
+from ..enums import (
+    OCTETSTRING,
+    HEX_STRING,
+    OID,
+    OID_SHORT,
+    GAUGE32,
+    INTEGER,
+    STRING,
+    COUNTER32,
+    COUNTER64,
+    TIMETICKS,
+    IPADDRESS,
+    NULL,
+)
+
 
 def format_raw_values(value, value_type):
     """

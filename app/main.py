@@ -32,8 +32,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 async def test_api():
     return {"message": "Don't worry. API is working just fine."}
+
 
 app.include_router(user.router)
