@@ -50,7 +50,7 @@ from .enums import (
 from .utils import get_olt_information
 from .converters.index_decoders import _index_decoder
 from .dictionaries.oid_name_dict import oid_name_dictionary
-from .parsers.default_parser import (
+from .parsers.snmp_parsers import (
     _parse_descr,
     _parse_hex_string,
     _parse_hex_to_ascii,
