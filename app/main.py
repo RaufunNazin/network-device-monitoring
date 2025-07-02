@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from . import models
 from .database import engine
-from .routers import user
+from .routers import snmp
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -38,4 +38,4 @@ async def test_api():
     return {"message": "Don't worry. API is working just fine."}
 
 
-app.include_router(user.router)
+app.include_router(snmp.router)
