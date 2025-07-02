@@ -6,6 +6,8 @@ from ..enums import (
     OPERATION_STATUS_DB,
     VSOL_EPON,
     VSOL_GPON,
+    EPON,
+    GPON,
 )
 import re
 from datetime import datetime, timedelta
@@ -197,12 +199,12 @@ def _parse_descr(pon: int, onu: int, brand: str, slot_id: int | None = None) -> 
         A formatted description string.
     """
     # Use a case-insensitive check for robustness and provide a default value.
-    type_str = "EPON"  # Default if brand is not recognized
+    type_str = EPON  # Default if brand is not recognized
     normalized_brand = brand.upper()
     frame_id = 0
 
-    if "GPON" in normalized_brand:
-        type_str = "GPON"
+    if GPON in normalized_brand:
+        type_str = GPON
 
     if brand == CDATA_EPON or brand == CDATA_GPON:
         # For CDATA EPON, frame_id is not used in the description
