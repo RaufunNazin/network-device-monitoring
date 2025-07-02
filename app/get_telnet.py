@@ -47,113 +47,58 @@ def flush_extra_output(tn):
     _ = tn.read_very_eager()
 
 
-def get_cdata_data(tn, command, prompt, more_prompt):
-    """Sends a command, handles pagination, and waits for the prompt to return."""
-    print(f"[+] Sending command: {command}")
-
-    flush_extra_output(tn)
-    time.sleep(1)
-
-    # Send the command
-    tn.write(command.encode("ascii") + b"\n")
-    output = b""
-
-    while True:
-        chunk = tn.read_until(more_prompt, timeout=5)
-        output += chunk
-        if more_prompt in chunk:
-            print("[+] More data found, sending SPACE")
-            tn.write(b" ")
-        else:
-            # Ensure final prompt is received
-            remaining = tn.read_until(prompt, timeout=10)
-            output += remaining
-            break
-    return output.decode("utf-8", errors="ignore")
-
-
-def get_vsol_data(tn, command, prompt, more_prompt):
-    """Sends a command, handles pagination, and waits for the prompt to return."""
+def get_paginated_data(tn, command, prompt, more_prompt):
+    """
+    Sends a command, handles pagination for any vendor, and waits for the prompt to return.
+    This function intelligently handles whether the prompts are strings or bytes.
+    """
     print(f"[+] Sending command: {command}")
     flush_extra_output(tn)
     time.sleep(1)
-    tn.write(command.encode("ascii") + b"\n")
+    tn.write(command.encode('ascii') + b"\n")
     output = b""
-
-    more_prompt_bytes = more_prompt.encode("ascii")
+    
+    # Intelligently handle both string and bytes prompts
+    more_prompt_bytes = more_prompt if isinstance(more_prompt, bytes) else more_prompt.encode("ascii")
     prompt_bytes = prompt if isinstance(prompt, bytes) else prompt.encode("ascii")
 
     while True:
-        # Read until either the "more" prompt or the command prompt
-        index, _, chunk = tn.expect([more_prompt_bytes, prompt_bytes], timeout=10)
+        # Use tn.expect() to wait for either the "more" prompt or the final command prompt
+        index, _, chunk = tn.expect([more_prompt_bytes, prompt_bytes], timeout=15) # Increased timeout for reliability
         output += chunk
-
+        
         if index == 0:  # Matched the "more" prompt
             print("[+] More data found, sending SPACE")
             tn.write(b" ")
             time.sleep(0.5)
-        elif index == 1:  # Matched the command prompt
+        elif index == 1: # Matched the command prompt
             print("[+] Command finished, prompt detected.")
             break
-        else:  # Timeout
+        else: # Timeout (index == -1)
             print("[-] Timeout waiting for prompt or more data.")
             # Try to read any remaining data before breaking
             remaining = tn.read_very_eager()
             if remaining:
                 output += remaining
             break
-
+            
     return output.decode("utf-8", errors="ignore")
 
 
-def get_bdcom_data(tn, command, prompt, more_prompt):
-    """Sends a command, handles pagination, and waits for the prompt to return."""
-    print(f"[+] Sending command: {command}")
-    flush_extra_output(tn)
-    time.sleep(1)
-    tn.write(command.encode("ascii") + b"\n")
-    output = b""
-
-    more_prompt_bytes = more_prompt.encode("ascii")
-    prompt_bytes = prompt if isinstance(prompt, bytes) else prompt.encode("ascii")
-
-    while True:
-        # Read until either the "more" prompt or the command prompt
-        index, _, chunk = tn.expect([more_prompt_bytes, prompt_bytes], timeout=10)
-        output += chunk
-
-        if index == 0:  # Matched the "more" prompt
-            print("[+] More data found, sending SPACE")
-            tn.write(b" ")
-            time.sleep(0.5)
-        elif index == 1:  # Matched the command prompt
-            print("[+] Command finished, prompt detected.")
-            break
-        else:  # Timeout
-            print("[-] Timeout waiting for prompt or more data.")
-            # Try to read any remaining data before breaking
-            remaining = tn.read_very_eager()
-            if remaining:
-                output += remaining
-            break
-
-    return output.decode("utf-8", errors="ignore")
-
-
-def get_parser_for_vendor(vendor):
-    """Returns the correct parsing function based on the vendor string."""
-    if vendor == CDATA_GPON:
+def get_parser_for_brand(brand):
+    """Returns the correct parsing function based on the brand string."""
+    if brand == CDATA_GPON:
         return parse_cdata_gpon
-    elif vendor == VSOL_GPON:
+    elif brand == VSOL_GPON:
         return parse_vsol_gpon
-    elif vendor == VSOL_EPON:
+    elif brand == VSOL_EPON:
         return parse_vsol_epon
-    elif vendor == BDCOM_EPON:
+    elif brand == BDCOM_EPON:
         return parse_bdcom_epon
-    elif vendor == BDCOM_GPON:
+    elif brand == BDCOM_GPON:
         return parse_bdcom_gpon
     else:
-        raise ValueError(f"Unsupported vendor: {vendor}")
+        raise ValueError(f"Unsupported brand: {brand}")
 
 
 def main():
@@ -165,9 +110,9 @@ def main():
     parser.add_argument("-ps", required=True, help="Password for telnet login")
     parser.add_argument(
         "-v",
-        "--vendor",
+        "--brand",
         required=True,
-        help="Vendor identifier (e.g., CDATA-GPON, VSOL-EPON, VSOL-GPON)",
+        help="Brand identifier (e.g., CDATA-GPON, VSOL-EPON, VSOL-GPON)",
     )
     parser.add_argument(
         "-d",
@@ -177,32 +122,32 @@ def main():
     )
 
     args = parser.parse_args()
-    HOST = args.i
-    PORT = args.p
-    USERNAME = args.u
-    PASSWORD = args.ps
-    VENDOR = args.vendor.upper()
+    host = args.i
+    port = args.p
+    username = args.u
+    password = args.ps
+    brand = args.brand.upper()
 
-    if VENDOR not in telnet_commands:
-        print(f"[-] Vendor '{VENDOR}' not supported.")
-        print(f"[-] Supported vendors are: {', '.join(telnet_commands.keys())}")
+    if brand not in telnet_commands:
+        print(f"[-] Brand '{brand}' not supported.")
+        print(f"[-] Supported brands are: {', '.join(telnet_commands.keys())}")
         return
 
-    commands = telnet_commands[VENDOR]
-    parse_function = get_parser_for_vendor(VENDOR)
+    commands = telnet_commands[brand]
+    parse_function = get_parser_for_brand(brand)
 
     try:
-        print(f"[+] Connecting to {HOST}:{PORT} ...")
-        tn = telnetlib.Telnet(HOST, PORT, timeout=10)
+        print(f"[+] Connecting to {host}:{port} ...")
+        tn = telnetlib.Telnet(host, port, timeout=10)
         print("[+] Connected.")
 
         print("[+] Waiting for username prompt...")
         tn.read_until(b"Username:", timeout=5)
-        tn.write(USERNAME.encode("ascii") + b"\n")
+        tn.write(username.encode("ascii") + b"\n")
 
         print("[+] Waiting for password prompt...")
         tn.read_until(b"Password:", timeout=5)
-        tn.write(PASSWORD.encode("ascii") + b"\n")
+        tn.write(password.encode("ascii") + b"\n")
 
         time.sleep(2)  # Wait for login to process
 
@@ -219,7 +164,7 @@ def main():
         time.sleep(0.5)
         # Some devices ask for password again for enable mode
         if "Password" in tn.read_very_eager().decode("ascii", errors="ignore"):
-            tn.write(PASSWORD.encode("ascii") + b"\n")
+            tn.write(password.encode("ascii") + b"\n")
         time.sleep(1)
 
         # After enable, the prompt character might change (e.g., from > to #)
@@ -235,20 +180,7 @@ def main():
         print(f"[+] Detected config mode prompt: {prompt.decode(errors='ignore')}")
         flush_extra_output(tn)
 
-        if VENDOR == CDATA_GPON:
-            output = get_cdata_data(
-                tn, commands["show_mac"], prompt, commands["pagination_text"]
-            )
-
-        elif VENDOR == VSOL_EPON or VENDOR == VSOL_GPON:
-            output = get_vsol_data(
-                tn, commands["show_mac"], prompt, commands["pagination_text"]
-            )
-
-        elif VENDOR == BDCOM_EPON or VENDOR == BDCOM_GPON:
-            output = get_bdcom_data(
-                tn, commands["show_mac"], prompt, commands["pagination_text"]
-            )
+        output = get_paginated_data(tn, commands["show_mac"], prompt, commands["pagination_text"])
 
         parsed_output = parse_function(output)
         print("\n--- Parsed Data ---")
@@ -264,7 +196,7 @@ def main():
             # and handles the database connection and insertion.
             print("[+] Inserting data into the database...")
             insert_into_db_olt_customer_mac(
-                parsed_output, HOST, db_host, db_port, db_user, db_pass, db_sid
+                parsed_output, host, db_host, db_port, db_user, db_pass, db_sid
             )
         else:
             print("[+] Dry run mode: Data not inserted into the database.")
