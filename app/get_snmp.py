@@ -79,6 +79,57 @@ def parse_snmp_output(
     Parses a list of SNMP string outputs into a structured dictionary of ONUs.
     For BDCOM_EPON, it requires desc_data to map indexes to ports.
     """
+        # --- NEW: Special handling for single ONU, single branch queries ---
+    if onu_index and not all_oid and branch:
+        # This regex is simpler, designed to just grab the value after the colon.
+        value_regex = re.compile(r'\=\ [A-Za-z0-9]+:\s*"?([^"\n]+)"?')
+        
+        if not data_array:
+            return {"value": None} # No data returned from SNMP
+
+        # A single-OID query should only have one line in the result.
+        raw_line = data_array[0]
+        match = value_regex.search(raw_line)
+
+        if not match:
+            return {"value": None} # Could not parse the value from the line
+
+        raw_value = match.group(1).strip()
+        parsed_value = None
+
+        try:
+            # Use the branch constant to determine which parser to use
+            if branch == POWER:
+                parsed_value = _parse_power(raw_value, brand)
+            elif branch == MAC:
+                parsed_value = _parse_mac(raw_value, brand)
+            elif branch == OPERATION_STATUS or branch == ADMIN_STATUS:
+                parsed_value = _parse_status(raw_value, branch)
+            elif branch == UP_SINCE:
+                parsed_value = _parse_up_since(raw_value, brand)
+            elif branch == SERIAL_NO:
+                parsed_value = (
+                    _parse_hex_string(raw_value, mode="serial")
+                    if brand == CDATA_EPON
+                    else _parse_mac(raw_value, brand)
+                )
+            elif branch == VENDOR or branch == MODEL:
+                 if brand in [CDATA_EPON, CDATA_GPON]:
+                    parsed_value = _parse_hex_to_ascii(raw_value)
+                 else:
+                    parsed_value = raw_value
+            elif branch == DISTANCE:
+                parsed_value = int(raw_value)
+            else:
+                # Default case for simple string values
+                parsed_value = raw_value
+        except (ValueError, TypeError) as e:
+            print(f"Could not parse single value for branch {branch}: {e}")
+            return {"value": None}
+
+        return {"value": parsed_value}
+
+    # --- EXISTING LOGIC FOR FULL SNMP WALKS (UNCHANGED) ---
     onus = {}
     # Regex updated to handle OID keys with hyphens or dots (e.g., 'IF-MIB::ifName')
     line_regex = re.compile(
@@ -300,25 +351,6 @@ def parse_snmp_output(
                     f"Could not process value for key '{target_key}' on ONU {onu_key}: {e}"
                 )
 
-        # --- ADD THIS ROBUST 'elif' FALLBACK BLOCK ---
-        elif branch and not all_oid and branch in branch_map:
-            # Fallback for single-branch queries where oid_key is generic
-            target_key, value_type = branch_map[branch]
-            try:
-                # Use specific parsers for complex types like Power
-                if target_key == POWER_DB:
-                    onu_data[target_key] = _parse_power(raw_value, brand)
-                elif target_key == MAC_DB:
-                    onu_data[target_key] = _parse_mac(raw_value, brand)
-                elif target_key in [OPERATION_STATUS_DB, ADMIN_STATUS_DB]:
-                    onu_data[target_key] = _parse_status(raw_value, target_key)
-                elif callable(value_type):  # Generic fallback for simple types
-                    onu_data[target_key] = value_type(raw_value.strip())
-            except (ValueError, TypeError) as e:
-                print(
-                    f"Could not process fallback value for key '{target_key}' on ONU {onu_key}: {e}"
-                )
-
     # PASS 2: Generate derived data
     if all_oid or branch == DESC:
         if brand in [CDATA_EPON, CDATA_GPON]:
@@ -345,19 +377,6 @@ def parse_snmp_output(
         for index, port_onu_key in index_to_port_onu_map.items():
             if index in index_to_mac_map and port_onu_key in onus:
                 onus[port_onu_key][MAC_DB] = index_to_mac_map[index]
-
-    # --- ADD THIS BLOCK: Reformat output for a single ONU, single branch query ---
-    if onu_index and not all_oid and branch and onus:
-        try:
-            # Get the first (and only) sub-dictionary, e.g., {"DISTANCE": 1182}
-            first_onu_data = next(iter(onus.values()))
-            # Get the first (and only) value from that dictionary, e.g., 1182
-            single_value = next(iter(first_onu_data.values()))
-            # Return in the special format requested
-            return {"value": single_value}
-        except (StopIteration, IndexError):
-            # If the dictionary is unexpectedly empty, proceed to the normal return.
-            pass
 
     # --- Final cleanup and sorting ---
     for onu_data in onus.values():
