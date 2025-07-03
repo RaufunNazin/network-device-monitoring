@@ -5,6 +5,7 @@ from operator import index
 import os
 import re
 from datetime import datetime
+from typing import Dict, Any, Optional
 
 from dotenv import load_dotenv
 
@@ -316,113 +317,152 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None):
         return onus
 
 
-async def main():
-    parser = argparse.ArgumentParser(description="SNMP OLT Information Retriever")
-    parser.add_argument("-i", required=True, help="Target OLT IP address or hostname")
-    parser.add_argument(
-        "-c", required=True, help="SNMP community string for read access"
-    )
-    parser.add_argument("-p", type=int, default=161, help="SNMP port (default: 161)")
-    parser.add_argument(
-        "-bc", choices=list(branches.keys()), help="OID branch to query"
-    )
-    parser.add_argument(
-        "-bd", required=True, choices=list(supported_brands.keys()), help="Brand name"
-    )
-    parser.add_argument(
-        "-v",
-        type=int,
-        default=0,
-        choices=[0, 1],
-        help="SNMP version (0 for v1, 1 for v2c; default: 0)",
-    )
-    parser.add_argument("-r", type=int, default=3, help="SNMP retries (default: 3)")
-    parser.add_argument(
-        "-t", type=int, default=3, help="SNMP timeout in seconds (default: 3)"
-    )
-    parser.add_argument(
-        "-idx", type=str, default=None, help="Specific interface index string to query"
-    )
-    parser.add_argument(
-        "-s", type=str, default=None, help="Specify filename to store output"
-    )
-    parser.add_argument(
-        "-d",
-        "--dry-run",
-        action="store_true",
-        help="Parse data but do not insert into database",
-    )
-    parser.add_argument(
-        "-all", action="store_true", help="If set, all OIDs will be queried"
-    )
-    args = parser.parse_args()
+# --- Core Reusable Function for API ---
+
+async def retrieve_olt_data(
+    target_ip: str,
+    community_string: str,
+    brand: str,
+    branch: str,
+    port: int = 161,
+    version: int = 0,
+    retries: int = 3,
+    timeout: int = 3,
+    onu_index_str: Optional[str] = None,
+    all_oid: bool = False,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """
+    Retrieves, parses, and optionally stores OLT information via SNMP.
+
+    This function is self-contained and can be imported and called from an API.
+
+    Args:
+        target_ip: The IP address or hostname of the OLT.
+        community_string: The SNMP community string for read access.
+        brand: The brand of the OLT (must be in `supported_brands`).
+        port: The SNMP port.
+        version: The SNMP version (0 for v1, 1 for v2c).
+        retries: The number of SNMP retries.
+        timeout: The SNMP timeout in seconds.
+        branch: The specific OID branch to query.
+        onu_index_str: A specific interface index string to query.
+        all_oid: If True, query all OID branches for the brand.
+        dry_run: If True, data is processed but not inserted into the database.
+
+    Returns:
+        A dictionary containing the parsed ONU data.
+    """
+    selected_branch_constant = branches.get(branch) if branch else None
+    if branch and not selected_branch_constant:
+        raise ValueError(f"Error: Invalid branch name '{branch}'.")
+
+    print(f"Querying branch '{branch or 'ALL'}' for brand '{brand}' on {target_ip}")
 
     # --- Main execution logic ---
-    selected_branch_constant = branches.get(args.bc)
-    if args.bc and not selected_branch_constant:
-        print(f"Error: Invalid branch name '{args.bc}'.")
-        return
-
-    print(f"Querying branch '{args.bc or 'ALL'}' for brand '{args.bd}' on {args.i}")
-
     result = await get_olt_information(
-        target_ip=args.i,
-        community_string=args.c,
-        port=args.p,
-        version=args.v,
-        retries=args.r,
-        timeout=args.t,
+        target_ip=target_ip,
+        community_string=community_string,
+        port=port,
+        version=version,
+        retries=retries,
+        timeout=timeout,
         branch=selected_branch_constant,
-        brand=args.bd,
-        onu_index_str=args.idx,
-        all_oid=args.all,
+        brand=brand,
+        onu_index_str=onu_index_str,
+        all_oid=all_oid,
     )
 
+    # Specific logic for brands that require an extra query for descriptions
     descrs = None
-    if args.bd in [BDCOM_EPON, BDCOM_GPON]:
+    if brand in [BDCOM_EPON, BDCOM_GPON]:
         print("BDCOM brand detected, fetching interface descriptions for mapping...")
         descrs = await get_olt_information(
-            target_ip=args.i,
-            community_string=args.c,
-            port=args.p,
-            version=args.v,
-            retries=args.r,
-            timeout=args.t,
+            target_ip=target_ip,
+            community_string=community_string,
+            port=port,
+            version=version,
+            retries=retries,
+            timeout=timeout,
             branch=DESC,
-            brand=args.bd,
-            onu_index_str=args.idx,
+            brand=brand,
+            onu_index_str=onu_index_str,
             all_oid=False,
         )
 
     processed_data = parse_snmp_output(
-        result, args.bd, selected_branch_constant, args.all, desc_data=descrs
+        result, brand, selected_branch_constant, all_oid, desc_data=descrs
     )
 
-    def custom_serializer(obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        raise TypeError(f"Type {type(obj)} not serializable")
-
-    if not args.dry_run:
+    if not dry_run:
         insert_into_db(
-            processed_data, args.i, db_host, db_port, db_user, db_pass, db_sid
+            processed_data, target_ip, db_host, db_port, db_user, db_pass, db_sid
         )
 
-    output_json = json.dumps(processed_data, indent=4, default=custom_serializer)
+    return processed_data
 
-    if args.s:
-        try:
-            with open(args.s, "w") as f:
-                f.write(output_json)
-            print(f"Output successfully stored in {args.s}")
-        except IOError as e:
-            print(f"Error writing to file {args.s}: {e}")
-    else:
-        print("\n--- Parsed ONU Data ---")
-        if not processed_data:
-            print("No ONU entries found.")
+
+# --- Command-Line Interface (CLI) Execution ---
+
+async def main():
+    """Parses command-line arguments and runs the OLT data retrieval."""
+    parser = argparse.ArgumentParser(description="SNMP OLT Information Retriever")
+    parser.add_argument("-i", required=True, help="Target OLT IP address or hostname")
+    parser.add_argument("-c", required=True, help="SNMP community string")
+    parser.add_argument("-p", type=int, default=161, help="SNMP port (default: 161)")
+    parser.add_argument("-bc", choices=list(branches.keys()), help="OID branch to query")
+    parser.add_argument("-bd", required=True, choices=list(supported_brands.keys()), help="Brand name")
+    parser.add_argument("-v", type=int, default=0, choices=[0, 1], help="SNMP version (0 for v1, 1 for v2c; default: 0)")
+    parser.add_argument("-r", type=int, default=3, help="SNMP retries (default: 3)")
+    parser.add_argument("-t", type=int, default=3, help="SNMP timeout in seconds (default: 3)")
+    parser.add_argument("-idx", type=str, default=None, help="Specific interface index string to query")
+    parser.add_argument("-s", type=str, default=None, help="Specify filename to store output")
+    parser.add_argument("-d", "--dry-run", action="store_true", help="Parse data but do not insert into database")
+    parser.add_argument("-all", action="store_true", help="If set, all OIDs will be queried")
+
+    args = parser.parse_args()
+
+    try:
+        # Call the core, reusable function with arguments from the command line
+        final_data = await retrieve_olt_data(
+            target_ip=args.i,
+            community_string=args.c,
+            brand=args.bd,
+            port=args.p,
+            version=args.v,
+            retries=args.r,
+            timeout=args.t,
+            branch=args.bc,
+            onu_index_str=args.idx,
+            all_oid=args.all,
+            dry_run=args.dry_run,
+        )
+
+        # Custom serializer for datetime objects
+        def custom_serializer(obj):
+            if isinstance(obj, datetime):
+                return obj.isoformat()  # Convert datetime to ISO format string
+            raise TypeError(f"Type {type(obj)} not serializable")
+
+        # Handle the output based on CLI flags
+        output_json = json.dumps(final_data, indent=4, default=custom_serializer)
+
+        if args.s:
+            try:
+                with open(args.s, "w") as f:
+                    f.write(output_json)
+                print(f"Output successfully stored in {args.s}")
+            except IOError as e:
+                print(f"Error writing to file {args.s}: {e}")
         else:
-            print(output_json)
+            print("\n--- Parsed ONU Data ---")
+            if not final_data:
+                print("No ONU entries found.")
+            else:
+                print(output_json)
+
+    except (ValueError, TypeError) as e:
+        print(f"Error: {e}")
 
 
 if __name__ == "__main__":
