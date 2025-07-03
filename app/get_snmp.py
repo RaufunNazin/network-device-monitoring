@@ -319,6 +319,7 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None):
 
 # --- Core Reusable Function for API ---
 
+
 async def retrieve_olt_data(
     target_ip: str,
     community_string: str,
@@ -404,21 +405,45 @@ async def retrieve_olt_data(
 
 # --- Command-Line Interface (CLI) Execution ---
 
+
 async def main():
     """Parses command-line arguments and runs the OLT data retrieval."""
     parser = argparse.ArgumentParser(description="SNMP OLT Information Retriever")
     parser.add_argument("-i", required=True, help="Target OLT IP address or hostname")
     parser.add_argument("-c", required=True, help="SNMP community string")
     parser.add_argument("-p", type=int, default=161, help="SNMP port (default: 161)")
-    parser.add_argument("-bc", choices=list(branches.keys()), help="OID branch to query")
-    parser.add_argument("-bd", required=True, choices=list(supported_brands.keys()), help="Brand name")
-    parser.add_argument("-v", type=int, default=0, choices=[0, 1], help="SNMP version (0 for v1, 1 for v2c; default: 0)")
+    parser.add_argument(
+        "-bc", choices=list(branches.keys()), help="OID branch to query"
+    )
+    parser.add_argument(
+        "-bd", required=True, choices=list(supported_brands.keys()), help="Brand name"
+    )
+    parser.add_argument(
+        "-v",
+        type=int,
+        default=0,
+        choices=[0, 1],
+        help="SNMP version (0 for v1, 1 for v2c; default: 0)",
+    )
     parser.add_argument("-r", type=int, default=3, help="SNMP retries (default: 3)")
-    parser.add_argument("-t", type=int, default=3, help="SNMP timeout in seconds (default: 3)")
-    parser.add_argument("-idx", type=str, default=None, help="Specific interface index string to query")
-    parser.add_argument("-s", type=str, default=None, help="Specify filename to store output")
-    parser.add_argument("-d", "--dry-run", action="store_true", help="Parse data but do not insert into database")
-    parser.add_argument("-all", action="store_true", help="If set, all OIDs will be queried")
+    parser.add_argument(
+        "-t", type=int, default=3, help="SNMP timeout in seconds (default: 3)"
+    )
+    parser.add_argument(
+        "-idx", type=str, default=None, help="Specific interface index string to query"
+    )
+    parser.add_argument(
+        "-s", type=str, default=None, help="Specify filename to store output"
+    )
+    parser.add_argument(
+        "-d",
+        "--dry-run",
+        action="store_true",
+        help="Parse data but do not insert into database",
+    )
+    parser.add_argument(
+        "-all", action="store_true", help="If set, all OIDs will be queried"
+    )
 
     args = parser.parse_args()
 

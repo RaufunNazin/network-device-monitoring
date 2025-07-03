@@ -55,33 +55,37 @@ def get_paginated_data(tn, command, prompt, more_prompt):
     print(f"[+] Sending command: {command}")
     flush_extra_output(tn)
     time.sleep(1)
-    tn.write(command.encode('ascii') + b"\n")
+    tn.write(command.encode("ascii") + b"\n")
     output = b""
-    
+
     # Intelligently handle both string and bytes prompts
-    more_prompt_bytes = more_prompt if isinstance(more_prompt, bytes) else more_prompt.encode("ascii")
+    more_prompt_bytes = (
+        more_prompt if isinstance(more_prompt, bytes) else more_prompt.encode("ascii")
+    )
     prompt_bytes = prompt if isinstance(prompt, bytes) else prompt.encode("ascii")
 
     while True:
         # Use tn.expect() to wait for either the "more" prompt or the final command prompt
-        index, _, chunk = tn.expect([more_prompt_bytes, prompt_bytes], timeout=15) # Increased timeout for reliability
+        index, _, chunk = tn.expect(
+            [more_prompt_bytes, prompt_bytes], timeout=15
+        )  # Increased timeout for reliability
         output += chunk
-        
+
         if index == 0:  # Matched the "more" prompt
             print("[+] More data found, sending SPACE")
             tn.write(b" ")
             time.sleep(0.5)
-        elif index == 1: # Matched the command prompt
+        elif index == 1:  # Matched the command prompt
             print("[+] Command finished, prompt detected.")
             break
-        else: # Timeout (index == -1)
+        else:  # Timeout (index == -1)
             print("[-] Timeout waiting for prompt or more data.")
             # Try to read any remaining data before breaking
             remaining = tn.read_very_eager()
             if remaining:
                 output += remaining
             break
-            
+
     return output.decode("utf-8", errors="ignore")
 
 
@@ -101,8 +105,8 @@ def get_parser_for_brand(brand):
         raise ValueError(f"Unsupported brand: {brand}")
 
 
-def main():
-    """Main function to connect to the device, fetch, parse, and store data."""
+def parse_arguments():
+    """Parses command-line arguments."""
     parser = argparse.ArgumentParser(description="Telnet MAC Address Table Fetcher")
     parser.add_argument("-i", required=True, help="Target device IP address")
     parser.add_argument("-p", type=int, default=23, help="Telnet port (default: 23)")
@@ -112,7 +116,7 @@ def main():
         "-v",
         "--brand",
         required=True,
-        help="Brand identifier (e.g., CDATA-GPON, VSOL-EPON, VSOL-GPON)",
+        help="Brand identifier (e.g., CDATA-GPON, VSOL-EPON)",
     )
     parser.add_argument(
         "-d",
@@ -120,13 +124,87 @@ def main():
         action="store_true",
         help="Parse data but do not insert into database",
     )
+    return parser.parse_args()
 
-    args = parser.parse_args()
+
+def connect_and_login(
+    host: str, port: int, username: str, password: str
+) -> telnetlib.Telnet:
+    """Establishes a Telnet connection and logs in."""
+    print(f"[+] Connecting to {host}:{port} ...")
+    tn = telnetlib.Telnet(host, port, timeout=10)
+    print("[+] Connected.")
+
+    print("[+] Waiting for username prompt...")
+    tn.read_until(b"Username:", timeout=5)
+    tn.write(username.encode("ascii") + b"\n")
+
+    print("[+] Waiting for password prompt...")
+    tn.read_until(b"Password:", timeout=5)
+    tn.write(password.encode("ascii") + b"\n")
+
+    time.sleep(2)  # Wait for login to complete
+    print("[+] Login sequence sent.")
+    return tn
+
+
+def fetch_mac_address_data(tn: telnetlib.Telnet, commands: dict, password: str) -> str:
+    """Navigates through device modes and fetches the MAC address table."""
+    # Detect the initial prompt after login
+    prompt = detect_prompt(tn)
+    print(f"[+] Detected initial prompt: {prompt.decode(errors='ignore')}")
+    flush_extra_output(tn)
+
+    print("[+] Entering enable mode...")
+    tn.write(commands["enable"].encode("ascii") + b"\n")
+    time.sleep(0.5)
+    # Handle devices that require a password for enable mode
+    if b"Password" in tn.read_very_eager():
+        tn.write(password.encode("ascii") + b"\n")
+    time.sleep(1)
+
+    prompt = detect_prompt(tn)
+    print(f"[+] Detected enable mode prompt: {prompt.decode(errors='ignore')}")
+    flush_extra_output(tn)
+
+    print("[+] Entering config mode...")
+    tn.write(commands["config"].encode("ascii") + b"\n")
+    time.sleep(1)
+    prompt = detect_prompt(tn)
+    print(f"[+] Detected config mode prompt: {prompt.decode(errors='ignore')}")
+    flush_extra_output(tn)
+
+    print("[+] Fetching MAC address table...")
+    output = get_paginated_data(
+        tn, commands["show_mac"], prompt, commands["pagination_text"]
+    )
+    return output
+
+
+def process_and_store_data(output: str, parse_function, host: str, dry_run: bool):
+    """Parses the raw data and stores it in the database if not a dry run."""
+    parsed_output = parse_function(output)
+    print("\n--- Parsed Data ---")
+    for entry in parsed_output:
+        print(entry)
+    print("-------------------\n")
+
+    if not dry_run:
+        print("[+] Inserting data into the database...")
+        insert_into_db_olt_customer_mac(
+            parsed_output, host, db_host, db_port, db_user, db_pass, db_sid
+        )
+        print("[+] Data insertion process completed.")
+    else:
+        print("[+] Dry run mode: Data will not be inserted into the database.")
+
+
+def main():
+    """Main function to orchestrate the data fetching and processing."""
+    args = parse_arguments()
     host = args.i
-    port = args.p
-    username = args.u
-    password = args.ps
     brand = args.brand.upper()
+    password = args.ps  # Store password for potential re-use in enable mode
 
     if brand not in telnet_commands:
         print(f"[-] Brand '{brand}' not supported.")
@@ -135,77 +213,22 @@ def main():
 
     commands = telnet_commands[brand]
     parse_function = get_parser_for_brand(brand)
+    tn = None
 
     try:
-        print(f"[+] Connecting to {host}:{port} ...")
-        tn = telnetlib.Telnet(host, port, timeout=10)
-        print("[+] Connected.")
-
-        print("[+] Waiting for username prompt...")
-        tn.read_until(b"Username:", timeout=5)
-        tn.write(username.encode("ascii") + b"\n")
-
-        print("[+] Waiting for password prompt...")
-        tn.read_until(b"Password:", timeout=5)
-        tn.write(password.encode("ascii") + b"\n")
-
-        time.sleep(2)  # Wait for login to process
-
-        # Expecting a prompt like 'VSOL-2-FUTURE>' or 'CDATA#'
-        initial_output = tn.read_very_eager().decode("ascii", errors="ignore")
-        print(f"Initial login output: {initial_output}")
-        prompt = detect_prompt(tn)
-        print(f"[+] Detected prompt: {prompt.decode(errors='ignore')}")
-
-        flush_extra_output(tn)
-
-        print("[+] Entering enable mode...")
-        tn.write(commands["enable"].encode("ascii") + b"\n")
-        time.sleep(0.5)
-        # Some devices ask for password again for enable mode
-        if "Password" in tn.read_very_eager().decode("ascii", errors="ignore"):
-            tn.write(password.encode("ascii") + b"\n")
-        time.sleep(1)
-
-        # After enable, the prompt character might change (e.g., from > to #)
-        prompt = detect_prompt(tn)
-        print(f"[+] Detected enable mode prompt: {prompt.decode(errors='ignore')}")
-        flush_extra_output(tn)
-
-        print("[+] Entering config mode...")
-        tn.write(commands["config"].encode("ascii") + b"\n")
-        time.sleep(1)
-        # After config, the prompt might change again
-        prompt = detect_prompt(tn)
-        print(f"[+] Detected config mode prompt: {prompt.decode(errors='ignore')}")
-        flush_extra_output(tn)
-
-        output = get_paginated_data(tn, commands["show_mac"], prompt, commands["pagination_text"])
-
-        parsed_output = parse_function(output)
-        print("\n--- Parsed Data ---")
-        for entry in parsed_output:
-            print(entry)
-        print("-------------------\n")
-
-        tn.close()
-        print("[+] Telnet connection closed.")
-
-        if not args.dry_run:
-            # Assuming insert_into_db_olt_customer_mac is defined elsewhere
-            # and handles the database connection and insertion.
-            print("[+] Inserting data into the database...")
-            insert_into_db_olt_customer_mac(
-                parsed_output, host, db_host, db_port, db_user, db_pass, db_sid
-            )
-        else:
-            print("[+] Dry run mode: Data not inserted into the database.")
+        tn = connect_and_login(host, args.p, args.u, password)
+        raw_output = fetch_mac_address_data(tn, commands, password)
+        process_and_store_data(raw_output, parse_function, host, args.dry_run)
 
     except Exception as e:
         print(f"[-] An error occurred: {e}")
         import traceback
 
         traceback.print_exc()
+    finally:
+        if tn:
+            tn.close()
+            print("[+] Telnet connection closed.")
 
 
 if __name__ == "__main__":
