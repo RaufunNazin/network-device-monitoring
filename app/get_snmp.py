@@ -72,7 +72,7 @@ db_pass = os.getenv("DB_PASS")
 db_sid = os.getenv("DB_SID")
 
 
-def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None):
+def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None, onu_index=None):
     """
     Parses a list of SNMP string outputs into a structured dictionary of ONUs.
     For BDCOM_EPON, it requires desc_data to map indexes to ports.
@@ -304,6 +304,19 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None):
             if index in index_to_mac_map and port_onu_key in onus:
                 onus[port_onu_key][MAC_DB] = index_to_mac_map[index]
 
+    # --- ADD THIS BLOCK: Reformat output for a single ONU, single branch query ---
+    if onu_index and not all_oid and branch and onus:
+        try:
+            # Get the first (and only) sub-dictionary, e.g., {"DISTANCE": 1182}
+            first_onu_data = next(iter(onus.values()))
+            # Get the first (and only) value from that dictionary, e.g., 1182
+            single_value = next(iter(first_onu_data.values()))
+            # Return in the special format requested
+            return {"value": single_value}
+        except (StopIteration, IndexError):
+            # If the dictionary is unexpectedly empty, proceed to the normal return.
+            pass
+
     # --- Final cleanup and sorting ---
     for onu_data in onus.values():
         onu_data.pop(ADMIN_STATUS_DB, None)
@@ -392,7 +405,7 @@ async def retrieve_olt_data(
         )
 
     processed_data = parse_snmp_output(
-        result, brand, selected_branch_constant, all_oid, desc_data=descrs
+        result, brand, selected_branch_constant, all_oid, desc_data=descrs, onu_index=onu_index_str
     )
 
     if not dry_run:
