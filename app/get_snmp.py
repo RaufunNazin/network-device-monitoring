@@ -72,7 +72,9 @@ db_pass = os.getenv("DB_PASS")
 db_sid = os.getenv("DB_SID")
 
 
-def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None, onu_index=None):
+def parse_snmp_output(
+    data_array, brand, branch, all_oid, desc_data=None, onu_index=None
+):
     """
     Parses a list of SNMP string outputs into a structured dictionary of ONUs.
     For BDCOM_EPON, it requires desc_data to map indexes to ports.
@@ -82,6 +84,21 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None, onu_in
     line_regex = re.compile(
         r'::([a-zA-Z0-9]+)\.((?:\d+\.)*\d+)\s*=\s*(?:[a-zA-Z \-0-9]+):\s*"?([^"\n]+)"?'
     )
+
+    branch_map = {
+        MAC: (MAC_DB, str),
+        SERIAL_NO: (SERIAL_NO_DB, str),
+        OPERATION_STATUS: (OPERATION_STATUS_DB, int),
+        ADMIN_STATUS: (ADMIN_STATUS_DB, int),
+        DISTANCE: (DISTANCE_DB, int),
+        UP_SINCE: (UP_SINCE_DB, datetime),
+        POWER: (POWER_DB, float),
+        VENDOR: (VENDOR_DB, str),
+        MODEL: (MODEL_DB, str),
+        ONU: (ONU_DB, int),
+        PON: (PON_DB, int),
+        DESC: (DESC_DB, str),
+    }
 
     # Map OID names to the final DB key and data type for parsing.
     key_map = {
@@ -232,12 +249,12 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None, onu_in
                         {PON_DB: decoded_ids[PON_ID], ONU_DB: decoded_ids[ONU_ID]}
                     )
             else:  # VSOL
-                index_parts = full_index.split('.')
+                index_parts = full_index.split(".")
                 if len(index_parts) >= 2:
                     # Create a consistent 'pon.onu' key, e.g., "3.39"
                     onu_key = f"{index_parts[-2]}.{index_parts[-1]}"
                 else:
-                    onu_key = full_index # Fallback for unexpected formats
+                    onu_key = full_index  # Fallback for unexpected formats
 
                 if (
                     brand == VSOL_GPON
@@ -246,7 +263,6 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None, onu_in
                 ):
                     continue
                 onu_data = onus.setdefault(onu_key, {})
-
 
             if all_oid:
                 onu_data[IFINDEX2_DB] = full_index
@@ -282,6 +298,25 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None, onu_in
             except (ValueError, TypeError) as e:
                 print(
                     f"Could not process value for key '{target_key}' on ONU {onu_key}: {e}"
+                )
+
+        # --- ADD THIS ROBUST 'elif' FALLBACK BLOCK ---
+        elif branch and not all_oid and branch in branch_map:
+            # Fallback for single-branch queries where oid_key is generic
+            target_key, value_type = branch_map[branch]
+            try:
+                # Use specific parsers for complex types like Power
+                if target_key == POWER_DB:
+                    onu_data[target_key] = _parse_power(raw_value, brand)
+                elif target_key == MAC_DB:
+                    onu_data[target_key] = _parse_mac(raw_value, brand)
+                elif target_key in [OPERATION_STATUS_DB, ADMIN_STATUS_DB]:
+                    onu_data[target_key] = _parse_status(raw_value, target_key)
+                elif callable(value_type):  # Generic fallback for simple types
+                    onu_data[target_key] = value_type(raw_value.strip())
+            except (ValueError, TypeError) as e:
+                print(
+                    f"Could not process fallback value for key '{target_key}' on ONU {onu_key}: {e}"
                 )
 
     # PASS 2: Generate derived data
@@ -412,7 +447,12 @@ async def retrieve_olt_data(
         )
 
     processed_data = parse_snmp_output(
-        result, brand, selected_branch_constant, all_oid, desc_data=descrs, onu_index=onu_index_str
+        result,
+        brand,
+        selected_branch_constant,
+        all_oid,
+        desc_data=descrs,
+        onu_index=onu_index_str,
     )
 
     if not dry_run:
