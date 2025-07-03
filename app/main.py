@@ -1,18 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from . import models
-from .database import engine
 from .routers import snmp
 from dotenv import load_dotenv
 
 load_dotenv()
 
-models.Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 origins = [
     "http://localhost:5173",
@@ -38,4 +31,4 @@ async def test_api():
     return {"message": "Don't worry. API is working just fine."}
 
 
-app.include_router(snmp.router)
+# app.include_router(snmp.router)

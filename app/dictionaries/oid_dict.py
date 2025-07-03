@@ -1,4 +1,4 @@
-from enums import (
+from ..enums import (
     MAC,
     OPERATION_STATUS,
     ADMIN_STATUS,
