@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from ..get_snmp import retrieve_olt_data
 
 router = APIRouter(
     prefix="/snmp",
@@ -7,11 +8,24 @@ router = APIRouter(
 
 
 @router.get("/onu-ports")
-async def get_onu_ports():
+async def get_onu_ports(
+    ip: str,
+    community: str,
+    brand: str,
+    branch: str,
+    port: int = 161,
+    version: int = 0,
+    retries: int = 3,
+    timeout: int = 3,
+    onu_index_str: Optional[str] = None,
+    all_oid: bool = False,
+    dry_run: bool = False,
+):
     """
-    Endpoint to retrieve ONU ports information.
+    Endpoint to retrieve customer MAC addresses.
     """
-    return {"message": "This endpoint will return ONU ports information."}
+    data = await retrieve_olt_data()
+    
 
 
 @router.get("/customer-mac")

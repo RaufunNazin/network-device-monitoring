@@ -396,11 +396,11 @@ async def retrieve_olt_data(
     )
 
     if not dry_run:
-        insert_into_db(
+        success = insert_into_db(
             processed_data, target_ip, db_host, db_port, db_user, db_pass, db_sid
         )
 
-    return processed_data
+    return processed_data, success if not dry_run else None
 
 
 # --- Command-Line Interface (CLI) Execution ---
@@ -449,7 +449,7 @@ async def main():
 
     try:
         # Call the core, reusable function with arguments from the command line
-        final_data = await retrieve_olt_data(
+        final_data, success = await retrieve_olt_data(
             target_ip=args.i,
             community_string=args.c,
             brand=args.bd,
@@ -462,6 +462,12 @@ async def main():
             all_oid=args.all,
             dry_run=args.dry_run,
         )
+
+        if success is not None:
+            if success:
+                print("Data successfully inserted into the database.")
+            else:
+                print("Data insertion failed or no data to insert.")
 
         # Custom serializer for datetime objects
         def custom_serializer(obj):
