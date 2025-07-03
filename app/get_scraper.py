@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.firefox.service import Service
@@ -10,6 +11,8 @@ from dotenv import load_dotenv
 import argparse
 import json
 from .utils import insert_into_db_olt_customer_mac
+import time
+
 
 load_dotenv()
 
@@ -18,6 +21,7 @@ db_port = os.getenv("DB_PORT")
 db_user = os.getenv("DB_USER")
 db_pass = os.getenv("DB_PASS")
 db_sid = os.getenv("DB_SID")
+GECKODRIVER_PATH = os.getenv("GECKODRIVER_PATH", "/home/maestro/bin/geckodriver")
 
 
 if not all([db_host, db_user, db_pass, db_sid]):
