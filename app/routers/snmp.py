@@ -21,7 +21,7 @@ async def get_onu_ports(
     version: int = Query(0, ge=0, le=1, description="SNMP version (0 for v1, 1 for v2c)"),
     retries: int = Query(3, description="Number of SNMP retries"),
     timeout: int = Query(3, description="SNMP timeout in seconds"),
-    onu_index_str: Optional[str] = Query(None, description="Specific interface index string to query"),
+    onu_index: Optional[str] = Query(None, description="Specific interface index string to query"),
     dry_run: bool = Query(False, description="Parse data but do not insert into the database"),
 ):
     """
@@ -45,7 +45,7 @@ async def get_onu_ports(
             retries=retries,
             timeout=timeout,
             branch=valid_branch,
-            onu_index_str=onu_index_str,
+            onu_index_str=onu_index,
             all_oid=False,  # Assuming 'all' is not needed for this specific endpoint
             dry_run=dry_run,
         )

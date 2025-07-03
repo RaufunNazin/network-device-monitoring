@@ -31,4 +31,4 @@ async def test_api():
     return {"message": "Don't worry. API is working just fine."}
 
 
-# app.include_router(snmp.router)
+app.include_router(snmp.router)
