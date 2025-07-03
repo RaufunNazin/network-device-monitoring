@@ -10,11 +10,34 @@ from .dictionaries.oid_dict import oid_dictionary
 from .parsers.raw_value_parser import format_raw_values
 import cx_Oracle
 from datetime import datetime
+from .constants import branches, supported_brands
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 _mib_cache = None
+
+
+def validate_brand(brand: str):
+    """
+    Validates if the provided brand is supported.
+    """
+    if brand not in supported_brands:
+        raise ValueError(
+            f"Unsupported brand: {brand}. Supported brands are: {', '.join(supported_brands.keys())}"
+        )
+    return brand
+
+
+def validate_branch(branch: str):
+    """
+    Validates if the provided branch is supported.
+    """
+    if branch not in branches:
+        raise ValueError(
+            f"Unsupported branch: {branch}. Supported branches are: {', '.join(branches.keys())}"
+        )
+    return branch
 
 
 def format_mac(hex_mac):

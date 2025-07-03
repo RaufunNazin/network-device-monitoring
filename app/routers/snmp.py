@@ -1,19 +1,3 @@
-from ..enums import (
-    MAC,
-    OPERATION_STATUS,
-    ADMIN_STATUS,
-    DISTANCE,
-    UP_SINCE,
-    VENDOR,
-    MODEL,
-    SERIAL_NO,
-    POWER,
-    DESC,
-    CDATA_EPON,
-    CDATA_GPON,
-    VSOL_EPON,
-    VSOL_GPON,
-)
 from fastapi import APIRouter
 
 router = APIRouter(
