@@ -82,7 +82,7 @@ def parse_snmp_output(
         # --- NEW: Special handling for single ONU, single branch queries ---
     if onu_index and not all_oid and branch:
         # This regex is simpler, designed to just grab the value after the colon.
-        value_regex = re.compile(r'\=\ [A-Za-z0-9]+:\s*"?([^"\n]+)"?')
+        value_regex = re.compile(r'\=\ [A-Za-z0-9\-]+:\s*"?([^"\n]+)"?')
         
         if not data_array:
             return {"value": None} # No data returned from SNMP
