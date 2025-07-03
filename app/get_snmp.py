@@ -232,7 +232,13 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None, onu_in
                         {PON_DB: decoded_ids[PON_ID], ONU_DB: decoded_ids[ONU_ID]}
                     )
             else:  # VSOL
-                onu_key = full_index
+                index_parts = full_index.split('.')
+                if len(index_parts) >= 2:
+                    # Create a consistent 'pon.onu' key, e.g., "3.39"
+                    onu_key = f"{index_parts[-2]}.{index_parts[-1]}"
+                else:
+                    onu_key = full_index # Fallback for unexpected formats
+
                 if (
                     brand == VSOL_GPON
                     and (all_oid or branch == MAC)
@@ -240,6 +246,7 @@ def parse_snmp_output(data_array, brand, branch, all_oid, desc_data=None, onu_in
                 ):
                     continue
                 onu_data = onus.setdefault(onu_key, {})
+
 
             if all_oid:
                 onu_data[IFINDEX2_DB] = full_index
