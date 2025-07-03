@@ -33,7 +33,7 @@ def _parse_mac(raw_value: str, brand: str) -> str | None:
         return None
 
     try:
-        if brand == VSOL_EPON and VSOL_GPON:
+        if brand == VSOL_EPON or brand == VSOL_GPON:
             # Assumes EPON provides a pre-formatted or simple MAC string
             parsed_value = raw_value.strip()
         elif brand == CDATA_EPON:
