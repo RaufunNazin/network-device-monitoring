@@ -441,7 +441,7 @@ async def retrieve_olt_data(
             branch=DESC,
             brand=brand,
             onu_index_str=onu_index_str,
-            all_oid=all_oid,
+            all_oid=False, # Only need descriptions, not all OIDs
         )
 
     processed_data = parse_snmp_output(
