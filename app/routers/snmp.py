@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, Query, HTTPException
 from ..utils import validate_brand, validate_branch
 from typing import Optional
+import sys
 import os # Import the os module
 
 router = APIRouter(
@@ -38,7 +39,18 @@ async def get_onu_ports(
         # 2. Define the path to your script
         # IMPORTANT: Use an absolute or reliable relative path
         # This assumes your FastAPI app runs from the project root directory
-        script_path = os.path.join("NDM-SNMP", "separate_functions.py")
+        # Get the directory of the current API file (e.g., /.../fastarter/app/routes/)
+        current_api_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Go up three levels to the main project directory (e.g., /home/user/Documents/)
+        # Each os.path.dirname is like one "cd .."
+        project_base = os.path.dirname(os.path.dirname(os.path.dirname(current_api_dir)))
+
+        # Now, construct the final path to the script
+        script_path = os.path.join(project_base, "snmptest", "separate_functions.py")
+
+        # This print statement is for your debugging
+        print(f"DEBUG: Quick-fix absolute path check: {script_path}", file=sys.stderr)
         if not os.path.exists(script_path):
              raise HTTPException(
                 status_code=500, detail=f"Script not found at path: {script_path}"
@@ -47,7 +59,7 @@ async def get_onu_ports(
 
         # 3. Build the command as a list of arguments for security
         command = [
-            "python",
+            sys.executable,
             script_path,
             "-i", ip,
             "-c", community,
@@ -76,6 +88,8 @@ async def get_onu_ports(
         # 5. Wait for the command to complete and get the output
         stdout, stderr = await process.communicate()
 
+        print(script_path, command)  # Debugging output
+
         # 6. Handle errors from the script
         if process.returncode != 0:
             error_message = stderr.decode() if stderr else "Unknown error in script execution."
@@ -89,6 +103,7 @@ async def get_onu_ports(
         try:
             # We get the last part of the output, where the JSON is printed
             json_output = stdout.decode().strip().split('--- Parsed ONU Data ---')[-1]
+            print(script_path, file=sys.stderr)  # Debugging output
             data = json.loads(json_output)
             return {"value":data, "path": script_path, "command": command}
         except (json.JSONDecodeError, IndexError) as e:
