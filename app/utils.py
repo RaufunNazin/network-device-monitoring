@@ -398,10 +398,10 @@ def insert_into_db(onu_data, ip, db_host, db_port, db_user, db_pass, db_sid):
                 T.IFINDEX = :ifindex,
                 T.UDATE = :udate,
                 T.SLNO = :slno,
-                T.DISTANCE = :distance,
+                T.DISTANCE = NVL(:distance, T.DISTANCE),
                 T.UP_SINCE = :up_since,
-                T.ONU_MODEL = :onu_model,
-                T.ONU_VENDOR = :onu_vendor,
+                T.ONU_MODEL = NVL(:onu_model, T.ONU_MODEL),
+                T.ONU_VENDOR = NVL(:onu_vendor, T.ONU_VENDOR),
                 T.IFINDEX2 = :ifindex2
         WHEN NOT MATCHED THEN
             INSERT (
