@@ -136,21 +136,6 @@ def parse_snmp_output(
         r'::([a-zA-Z0-9]+)\.((?:\d+\.)*\d+)\s*=\s*(?:[a-zA-Z \-0-9]+):\s*"?([^"\n]+)"?'
     )
 
-    branch_map = {
-        MAC: (MAC_DB, str),
-        SERIAL_NO: (SERIAL_NO_DB, str),
-        OPERATION_STATUS: (OPERATION_STATUS_DB, int),
-        ADMIN_STATUS: (ADMIN_STATUS_DB, int),
-        DISTANCE: (DISTANCE_DB, int),
-        UP_SINCE: (UP_SINCE_DB, datetime),
-        POWER: (POWER_DB, float),
-        VENDOR: (VENDOR_DB, str),
-        MODEL: (MODEL_DB, str),
-        ONU: (ONU_DB, int),
-        PON: (PON_DB, int),
-        DESC: (DESC_DB, str),
-    }
-
     # Map OID names to the final DB key and data type for parsing.
     key_map = {
         oid_name_dictionary.get(MAC, {}).get(brand): (MAC_DB, str),
@@ -189,7 +174,7 @@ def parse_snmp_output(
 
             _oid_key, index, raw_value = match.groups()
             if (
-                (EPON in raw_value or GPON in raw_value)
+                ("EPON" in raw_value or "GPON" in raw_value)
                 and "/" in raw_value
                 and ":" in raw_value
             ):
@@ -300,13 +285,7 @@ def parse_snmp_output(
                         {PON_DB: decoded_ids[PON_ID], ONU_DB: decoded_ids[ONU_ID]}
                     )
             else:  # VSOL
-                index_parts = full_index.split(".")
-                if len(index_parts) >= 2:
-                    # Create a consistent 'pon.onu' key, e.g., "3.39"
-                    onu_key = f"{index_parts[-2]}.{index_parts[-1]}"
-                else:
-                    onu_key = full_index  # Fallback for unexpected formats
-
+                onu_key = full_index
                 if (
                     brand == VSOL_GPON
                     and (all_oid or branch == MAC)
