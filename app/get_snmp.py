@@ -85,14 +85,14 @@ def parse_snmp_output(
         value_regex = re.compile(r'\=\ [A-Za-z0-9\-]+:\s*"?([^"\n]+)"?')
         
         if not data_array:
-            return {"value": None} # No data returned from SNMP
+            return None # No data returned from SNMP
 
         # A single-OID query should only have one line in the result.
         raw_line = data_array[0]
         match = value_regex.search(raw_line)
 
         if not match:
-            return {"value": None} # Could not parse the value from the line
+            return None # Could not parse the value from the line
 
         raw_value = match.group(1).strip()
         parsed_value = None
@@ -125,9 +125,9 @@ def parse_snmp_output(
                 parsed_value = raw_value
         except (ValueError, TypeError) as e:
             print(f"Could not parse single value for branch {branch}: {e}")
-            return {"value": None}
+            return None
 
-        return {"value": parsed_value}
+        return `parsed_value
 
     # --- EXISTING LOGIC FOR FULL SNMP WALKS (UNCHANGED) ---
     onus = {}
