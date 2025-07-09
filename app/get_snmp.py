@@ -79,20 +79,20 @@ def parse_snmp_output(
     Parses a list of SNMP string outputs into a structured dictionary of ONUs.
     For BDCOM_EPON, it requires desc_data to map indexes to ports.
     """
-    # --- NEW: Special handling for single ONU, single branch queries ---
+        # --- NEW: Special handling for single ONU, single branch queries ---
     if onu_index and not all_oid and branch:
         # This regex is simpler, designed to just grab the value after the colon.
         value_regex = re.compile(r'\=\ [A-Za-z0-9\-]+:\s*"?([^"\n]+)"?')
-
+        
         if not data_array:
-            return None  # No data returned from SNMP
+            return {"value": None} # No data returned from SNMP
 
         # A single-OID query should only have one line in the result.
         raw_line = data_array[0]
         match = value_regex.search(raw_line)
 
         if not match:
-            return None  # Could not parse the value from the line
+            return {"value": None} # Could not parse the value from the line
 
         raw_value = match.group(1).strip()
         parsed_value = None
@@ -114,9 +114,9 @@ def parse_snmp_output(
                     else _parse_mac(raw_value, brand)
                 )
             elif branch == VENDOR or branch == MODEL:
-                if brand in [CDATA_EPON, CDATA_GPON]:
+                 if brand in [CDATA_EPON, CDATA_GPON]:
                     parsed_value = _parse_hex_to_ascii(raw_value)
-                else:
+                 else:
                     parsed_value = raw_value
             elif branch == DISTANCE:
                 parsed_value = int(raw_value)
@@ -125,9 +125,9 @@ def parse_snmp_output(
                 parsed_value = raw_value
         except (ValueError, TypeError) as e:
             print(f"Could not parse single value for branch {branch}: {e}")
-            return None
+            return {"value": None}
 
-        return parsed_value
+        return {"value": parsed_value}
 
     # --- EXISTING LOGIC FOR FULL SNMP WALKS (UNCHANGED) ---
     onus = {}
@@ -399,13 +399,13 @@ async def retrieve_olt_data(
     community_string: str,
     brand: str,
     branch: str,
-    all_oid: bool,
-    dry_run: bool,
-    port: int,
-    version: int,
-    retries: int,
-    timeout: int,
+    port: int = 161,
+    version: int = 0,
+    retries: int = 3,
+    timeout: int = 3,
     onu_index_str: Optional[str] = None,
+    all_oid: bool = False,
+    dry_run: bool = False,
 ) -> Dict[str, Any]:
     """
     Retrieves, parses, and optionally stores OLT information via SNMP.
