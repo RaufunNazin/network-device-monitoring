@@ -1,4 +1,6 @@
-from ..enums import (
+from enums import (
+    HUAWEI_EPON,
+    HUAWEI_GPON,
     MAC,
     OPERATION_STATUS,
     ADMIN_STATUS,
@@ -27,6 +29,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.5.10.3.5.1",
         BDCOM_EPON: "1.3.6.1.4.1.3320.101.10.4.1.1",
         BDCOM_GPON: "",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     SERIAL_NO: {
         CDATA_EPON: "1.3.6.1.4.1.17409.2.3.4.1.1.28",
@@ -35,6 +39,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.4.1.5",
         BDCOM_EPON: "1.3.6.1.4.1.3320.101.10.1.1.3",
         BDCOM_GPON: "1.3.6.1.4.1.3320.10.3.1.1.4",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.30",
     },
     OPERATION_STATUS: {
         CDATA_EPON: "1.3.6.1.4.1.17409.2.3.4.1.1.8",
@@ -43,6 +49,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.4.1.13",
         BDCOM_EPON: "1.3.6.1.2.1.2.2.1.8",
         BDCOM_GPON: "1.3.6.1.4.1.3320.10.3.1.1.8",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15",
     },
     ADMIN_STATUS: {
         CDATA_EPON: "1.3.6.1.4.1.17409.2.3.4.1.1.9",
@@ -51,6 +59,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.1.1.3",
         BDCOM_EPON: "1.3.6.1.2.1.2.2.1.7",
         BDCOM_GPON: "1.3.6.1.2.1.2.2.1.7",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     DISTANCE: {
         CDATA_EPON: "1.3.6.1.4.1.17409.2.3.4.1.1.15",
@@ -59,6 +69,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.12.1.3",
         BDCOM_EPON: "1.3.6.1.4.1.3320.101.10.1.1.27",
         BDCOM_GPON: "1.3.6.1.4.1.3320.10.3.1.1.33",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     UP_SINCE: {
         CDATA_EPON: "1.3.6.1.4.1.17409.2.3.4.1.1.18",
@@ -67,6 +79,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.4.1.20",
         BDCOM_EPON: "1.3.6.1.4.1.3320.101.10.1.1.80",
         BDCOM_GPON: "1.3.6.1.4.1.3320.10.3.1.1.19",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     VENDOR: {
         CDATA_EPON: "1.3.6.1.4.1.17409.2.3.4.1.1.25",
@@ -75,6 +89,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.4.1.3",
         BDCOM_EPON: "1.3.6.1.4.1.3320.101.10.1.1.1",
         BDCOM_GPON: "1.3.6.1.4.1.3320.10.3.1.1.2",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     MODEL: {
         CDATA_EPON: "1.3.6.1.4.1.17409.2.3.4.1.1.26",
@@ -83,6 +99,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.2.1.6",
         BDCOM_EPON: "1.3.6.1.4.1.3320.101.10.1.1.2",
         BDCOM_GPON: "1.3.6.1.4.1.3320.10.3.1.1.9",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     POWER: {
         CDATA_EPON: "1.3.6.1.4.1.17409.2.3.4.2.1.4",
@@ -91,6 +109,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.3.1.7",
         BDCOM_EPON: "1.3.6.1.4.1.3320.101.10.5.1.5",
         BDCOM_GPON: "1.3.6.1.4.1.3320.10.3.4.1.2",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4",
     },
     DESC: {
         CDATA_EPON: "",
@@ -100,6 +120,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.4.1.24",
         BDCOM_EPON: "1.3.6.1.2.1.31.1.1.1.1",
         BDCOM_GPON: "1.3.6.1.2.1.2.2.1.2",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     PON: {
         CDATA_EPON: "",
@@ -108,6 +130,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.12.1.1",
         BDCOM_EPON: "",
         BDCOM_GPON: "",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     ONU: {
         CDATA_EPON: "",
@@ -116,6 +140,8 @@ oid_dictionary = {
         VSOL_GPON: "1.3.6.1.4.1.37950.1.1.6.1.1.12.1.2",
         BDCOM_EPON: "",
         BDCOM_GPON: "",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
 }
 
