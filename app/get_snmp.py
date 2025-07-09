@@ -80,54 +80,54 @@ def parse_snmp_output(
     For BDCOM_EPON, it requires desc_data to map indexes to ports.
     """
         # --- NEW: Special handling for single ONU, single branch queries ---
-    if onu_index and not all_oid and branch:
-        # This regex is simpler, designed to just grab the value after the colon.
-        value_regex = re.compile(r'\=\ [A-Za-z0-9\-]+:\s*"?([^"\n]+)"?')
+    # if onu_index and not all_oid and branch:
+    #     # This regex is simpler, designed to just grab the value after the colon.
+    #     value_regex = re.compile(r'\=\ [A-Za-z0-9\-]+:\s*"?([^"\n]+)"?')
         
-        if not data_array:
-            return {"value": None} # No data returned from SNMP
+    #     if not data_array:
+    #         return {"value": None} # No data returned from SNMP
 
-        # A single-OID query should only have one line in the result.
-        raw_line = data_array[0]
-        match = value_regex.search(raw_line)
+    #     # A single-OID query should only have one line in the result.
+    #     raw_line = data_array[0]
+    #     match = value_regex.search(raw_line)
 
-        if not match:
-            return {"value": None} # Could not parse the value from the line
+    #     if not match:
+    #         return {"value": None} # Could not parse the value from the line
 
-        raw_value = match.group(1).strip()
-        parsed_value = None
+    #     raw_value = match.group(1).strip()
+    #     parsed_value = None
 
-        try:
-            # Use the branch constant to determine which parser to use
-            if branch == POWER:
-                parsed_value = _parse_power(raw_value, brand)
-            elif branch == MAC:
-                parsed_value = _parse_mac(raw_value, brand)
-            elif branch == OPERATION_STATUS or branch == ADMIN_STATUS:
-                parsed_value = _parse_status(raw_value, branch)
-            elif branch == UP_SINCE:
-                parsed_value = _parse_up_since(raw_value, brand)
-            elif branch == SERIAL_NO:
-                parsed_value = (
-                    _parse_hex_string(raw_value, mode="serial")
-                    if brand == CDATA_EPON
-                    else _parse_mac(raw_value, brand)
-                )
-            elif branch == VENDOR or branch == MODEL:
-                 if brand in [CDATA_EPON, CDATA_GPON]:
-                    parsed_value = _parse_hex_to_ascii(raw_value)
-                 else:
-                    parsed_value = raw_value
-            elif branch == DISTANCE:
-                parsed_value = int(raw_value)
-            else:
-                # Default case for simple string values
-                parsed_value = raw_value
-        except (ValueError, TypeError) as e:
-            print(f"Could not parse single value for branch {branch}: {e}")
-            return {"value": None}
+    #     try:
+    #         # Use the branch constant to determine which parser to use
+    #         if branch == POWER:
+    #             parsed_value = _parse_power(raw_value, brand)
+    #         elif branch == MAC:
+    #             parsed_value = _parse_mac(raw_value, brand)
+    #         elif branch == OPERATION_STATUS or branch == ADMIN_STATUS:
+    #             parsed_value = _parse_status(raw_value, branch)
+    #         elif branch == UP_SINCE:
+    #             parsed_value = _parse_up_since(raw_value, brand)
+    #         elif branch == SERIAL_NO:
+    #             parsed_value = (
+    #                 _parse_hex_string(raw_value, mode="serial")
+    #                 if brand == CDATA_EPON
+    #                 else _parse_mac(raw_value, brand)
+    #             )
+    #         elif branch == VENDOR or branch == MODEL:
+    #              if brand in [CDATA_EPON, CDATA_GPON]:
+    #                 parsed_value = _parse_hex_to_ascii(raw_value)
+    #              else:
+    #                 parsed_value = raw_value
+    #         elif branch == DISTANCE:
+    #             parsed_value = int(raw_value)
+    #         else:
+    #             # Default case for simple string values
+    #             parsed_value = raw_value
+    #     except (ValueError, TypeError) as e:
+    #         print(f"Could not parse single value for branch {branch}: {e}")
+    #         return {"value": None}
 
-        return {"value": parsed_value}
+    #     return {"value": parsed_value}
 
     # --- EXISTING LOGIC FOR FULL SNMP WALKS (UNCHANGED) ---
     onus = {}
