@@ -1,5 +1,14 @@
-COMPILED_MIBS = "app/compiled_mibs"
-MIBS = "app/mibs"
+import os
+
+# Gets the directory containing this file (e.g., /path/to/fastarter/app)
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Goes up one level to get the project root (e.g., /path/to/fastarter)
+PROJECT_ROOT = os.path.dirname(APP_DIR)
+
+# Defines the paths correctly from the project root
+COMPILED_MIBS = os.path.join(PROJECT_ROOT, "compiled_mibs")
+MIBS = os.path.join(PROJECT_ROOT, "mibs")
 
 MAC = "MAC"
 OPERATION_STATUS = "OPERATION_STATUS"
