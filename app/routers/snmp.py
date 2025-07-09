@@ -1,7 +1,9 @@
+import asyncio
+import json
 from fastapi import APIRouter, Query, HTTPException
-from ..get_snmp import retrieve_olt_data
 from ..utils import validate_brand, validate_branch
 from typing import Optional
+import os # Import the os module
 
 router = APIRouter(
     prefix="/snmp",
@@ -18,85 +20,86 @@ async def get_onu_ports(
     # --- Query Parameters ---
     community: str = Query(..., description="SNMP community string for read access"),
     port: int = Query(161, description="SNMP port"),
-    version: int = Query(0, ge=0, le=1, description="SNMP version (0 for v1, 1 for v2c)"),
-    retries: int = Query(3, description="Number of SNMP retries"),
-    timeout: int = Query(3, description="SNMP timeout in seconds"),
+    dry_run: bool = Query(False, description="Run the script in dry-run mode (no actual SNMP queries)"),
     onu_index: Optional[str] = Query(None, description="Specific interface index string to query"),
     all_oid: bool = Query(False, description="Retrieve all OIDs for the specified branch"),
-    dry_run: bool = Query(False, description="Parse data but do not insert into the database"),
 ):
     """
-    Retrieves OLT information for a given brand and branch via SNMP.
+    Retrieves OLT information by executing an external Python script.
     - **ip**: The target OLT IP address.
     - **brand**: The brand identifier of the OLT.
     - **branch**: The OID branch to query (e.g., MAC, STATUS).
     """
     try:
-        # Validate the inputs first
+        # 1. Validate inputs (this part remains the same)
         valid_brand = validate_brand(brand.upper())
         valid_branch = validate_branch(branch.upper())
 
-        # Call the core logic with all parameters from the API
-        processed_data, db_success = await retrieve_olt_data(
-            target_ip=ip,
-            community_string=community,
-            brand=valid_brand,
-            port=port,
-            version=version,
-            retries=retries,
-            timeout=timeout,
-            branch=valid_branch,
-            onu_index_str=onu_index,
-            all_oid=all_oid,  
-            dry_run=dry_run,
+        # 2. Define the path to your script
+        # IMPORTANT: Use an absolute or reliable relative path
+        # This assumes your FastAPI app runs from the project root directory
+        script_path = os.path.join("NDM-SNMP", "separate_functions.py")
+        if not os.path.exists(script_path):
+             raise HTTPException(
+                status_code=500, detail=f"Script not found at path: {script_path}"
+            )
+
+
+        # 3. Build the command as a list of arguments for security
+        command = [
+            "python",
+            script_path,
+            "-i", ip,
+            "-c", community,
+            "-p", str(port),
+            "-bc", valid_branch,
+            "-bd", valid_brand,
+            "-v", "1",
+            "-r", "3",
+        ]
+        
+        # Add optional arguments if they are provided
+        if onu_index:
+            command.extend(["-idx", onu_index])
+        if dry_run:
+            command.append("-d")
+        if all_oid:
+            command.append("-all") # Another flag
+
+        # 4. Execute the command asynchronously
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
         )
 
-        if dry_run:
-            return {
-                "status": "dry_run",
-                "message": "Data retrieved successfully. Database insertion was skipped.",
-                "data": processed_data,
-            }
+        # 5. Wait for the command to complete and get the output
+        stdout, stderr = await process.communicate()
 
-        if db_success:
-            return {
-                "status": "success",
-                "message": "Data retrieved and stored successfully.",
-                "data": processed_data,
-            }
-        else:
-            # If insertion fails, it's a server-side issue.
+        # 6. Handle errors from the script
+        if process.returncode != 0:
+            error_message = stderr.decode() if stderr else "Unknown error in script execution."
             raise HTTPException(
                 status_code=500,
-                detail={
-                    "status": "error",
-                    "message": "Data was retrieved, but failed to store in the database.",
-                    "data": processed_data,
-                },
+                detail={"message": "Error executing the SNMP script.", "error": error_message}
+            )
+
+        # 7. Process the successful output
+        # The script prints JSON to stdout, so we load it
+        try:
+            # We get the last part of the output, where the JSON is printed
+            json_output = stdout.decode().strip().split('--- Parsed ONU Data ---')[-1]
+            data = json.loads(json_output)
+            return {"value":data, "path": script_path, "command": command}
+        except (json.JSONDecodeError, IndexError) as e:
+            raise HTTPException(
+                status_code=500,
+                detail={"message": "Failed to parse JSON output from script.", "raw_output": stdout.decode()}
             )
 
     except ValueError as e:
-        # Catches validation errors for brand/branch
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        # Catches other potential errors (e.g., SNMP timeout, connection error)
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
-    
-
-
-@router.get("/customer-mac")
-async def get_customer_mac():
-    """
-    Endpoint to retrieve customer MAC addresses.
-    """
-    return {"message": "This endpoint will return customer MAC addresses."}
-
-
-@router.get("/web-scraping")
-async def web_scraping():
-    """
-    Endpoint to perform web scraping.
-    """
-    return {"message": "This endpoint will perform web scraping."}
