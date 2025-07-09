@@ -1,4 +1,6 @@
-from ..enums import (
+from enums import (
+    HUAWEI_EPON,
+    HUAWEI_GPON,
     MAC,
     OPERATION_STATUS,
     ADMIN_STATUS,
@@ -27,6 +29,8 @@ oid_name_dictionary = {
         VSOL_GPON: "macFlappingVlanId",
         BDCOM_EPON: "onuMacAddr",
         BDCOM_GPON: "",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     SERIAL_NO: {
         CDATA_EPON: "onuSn",
@@ -35,6 +39,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuDetailInfoSn",
         BDCOM_EPON: "onuID",
         BDCOM_GPON: "onuSerialNum",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "hwGponDeviceOntControlActualSn",
     },
     OPERATION_STATUS: {
         CDATA_EPON: "onuOperationStatus",
@@ -43,6 +49,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuDetailInfoOpSta",
         BDCOM_EPON: "ifOperStatus",
         BDCOM_GPON: "onuOperationalState",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "hwGponDeviceOntControlRunStatus",
     },
     ADMIN_STATUS: {
         CDATA_EPON: "onuAdminStatus",
@@ -51,6 +59,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuStaInfoAdminSta",
         BDCOM_EPON: "ifAdminStatus",
         BDCOM_GPON: "ifAdminStatus",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     DISTANCE: {
         CDATA_EPON: "onuTestDistance",
@@ -59,6 +69,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuRttDistance",
         BDCOM_EPON: "onuDistance",
         BDCOM_GPON: "onuDistance",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     UP_SINCE: {
         CDATA_EPON: "onuTimeSinceLastRegister",
@@ -67,6 +79,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuDetailInfoSysUpTime",
         BDCOM_EPON: "onuAliveTime",
         BDCOM_GPON: "onuSysUpTime",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     VENDOR: {
         CDATA_EPON: "onuVendorId",
@@ -75,6 +89,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuDetailInfoVendorId",
         BDCOM_EPON: "onuVendorID",
         BDCOM_GPON: "onuVendorID",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     MODEL: {
         CDATA_EPON: "onuModelId",
@@ -83,6 +99,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuModel",
         BDCOM_EPON: "onuModuleID",
         BDCOM_GPON: "onuEquipmentID",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     POWER: {
         CDATA_EPON: "onuReceivedOpticalPower",
@@ -91,6 +109,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuOpticalInfoRxPwr",
         BDCOM_EPON: "opModuleRxPower",
         BDCOM_GPON: "gponOnuOpticalPowerRxPower",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "hwGponOntOpticalDdmRxPower",
     },
     DESC: {
         CDATA_EPON: "",
@@ -100,6 +120,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuDetailInfoOnuDesc",
         BDCOM_EPON: "ifName",
         BDCOM_GPON: "ifDescr",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     PON: {
         CDATA_EPON: "",
@@ -108,6 +130,8 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuRttPon",
         BDCOM_EPON: "",
         BDCOM_GPON: "",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
     ONU: {
         CDATA_EPON: "",
@@ -116,5 +140,7 @@ oid_name_dictionary = {
         VSOL_GPON: "gOnuRttOnu",
         BDCOM_EPON: "",
         BDCOM_GPON: "",
+        HUAWEI_EPON: "",
+        HUAWEI_GPON: "",
     },
 }
