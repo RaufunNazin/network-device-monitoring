@@ -1,4 +1,4 @@
-from enums import (
+from ..enums import (
     HUAWEI_EPON,
     HUAWEI_GPON,
     MAC,
