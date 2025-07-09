@@ -127,7 +127,7 @@ def parse_snmp_output(
             print(f"Could not parse single value for branch {branch}: {e}")
             return None
 
-        return `parsed_value
+        return parsed_value
 
     # --- EXISTING LOGIC FOR FULL SNMP WALKS (UNCHANGED) ---
     onus = {}
