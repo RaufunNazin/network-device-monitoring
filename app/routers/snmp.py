@@ -47,7 +47,7 @@ async def get_onu_ports(
         project_base = os.path.dirname(os.path.dirname(os.path.dirname(current_api_dir)))
 
         # Now, construct the final path to the script
-        script_path = os.path.join(project_base, "snmptest", "separate_functions.py")
+        script_path = os.path.join(project_base, "NDM-SNMP", "separate_functions.py")
 
         # This print statement is for your debugging
         print(f"DEBUG: Quick-fix absolute path check: {script_path}", file=sys.stderr)
