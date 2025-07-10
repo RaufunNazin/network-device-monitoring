@@ -14,6 +14,11 @@ from .constants import branches, supported_brands
 import asyncio
 from fastapi import HTTPException
 from dotenv import load_dotenv
+import logging
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -37,37 +42,37 @@ def fetch_switch_details_from_db(switch_id: int) -> dict:
     from the SWITCHES table in the Oracle database.
     """
     if not all([DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_SID]):
-        raise ConnectionError("Database credentials are not configured.")
+        raise ConnectionError("Database credentials are not configured in environment.")
 
     dsn_tns = cx_Oracle.makedsn(DB_HOST, int(DB_PORT), sid=DB_SID)
     connection = None
     try:
-        connection = cx_Oracle.connect(DB_USER, DB_PASS, dsn_tns)
+        # Using keyword arguments is clearer and less error-prone
+        connection = cx_Oracle.connect(user=DB_USER, password=DB_PASS, dsn=dsn_tns)
         cursor = connection.cursor()
 
-        # --- Query to fetch details from the SWITCHES table ---
-        cursor.execute("SELECT IP, BRAND, SNMP, SNMP_PORT FROM SWITCHES WHERE ID = :id", {"id": switch_id},
+        cursor.execute(
+            "SELECT IP, BRAND, SNMP, SNMP_PORT FROM SWITCHES WHERE ID = :id",
+            {"id": switch_id},
         )
-
         result = cursor.fetchone()
 
         if result:
-            # Map results to a dictionary for clarity
             return {
                 "ip": result[0],
                 "brand": result[1],
                 "community": result[2],
-                "port": (
-                    result[3] if result[3] is not None else 161
-                ),  # Default to 161 if NULL
+                "port": result[3] if result[3] is not None else 161,
             }
-        return None  # Return None if no switch is found
+        return None
 
     except cx_Oracle.DatabaseError as e:
-        # In a production environment, you should log this error
-        print(f"Database query failed: {e}")
-        # Re-raise as a generic exception to be handled by the endpoint
-        raise Exception("An error occurred while querying the database.")
+        # --- KEY IMPROVEMENT: Log the specific database error ---
+        log.error(f"Oracle Database Error: {e}")
+
+        # Raise a more informative but still generic exception for the API response
+        raise Exception("A database error occurred. Check server logs for details.")
+
     finally:
         if connection:
             connection.close()
