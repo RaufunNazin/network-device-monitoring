@@ -42,17 +42,11 @@ def fetch_switch_details_from_db(switch_id: int) -> dict:
     dsn_tns = cx_Oracle.makedsn(DB_HOST, int(DB_PORT), sid=DB_SID)
     connection = None
     try:
-        connection = cx_Oracle.connect(user=DB_USER, password=DB_PASS, dsn=dsn_tns)
+        connection = cx_Oracle.connect(DB_USER, DB_PASS, dsn_tns)
         cursor = connection.cursor()
 
         # --- Query to fetch details from the SWITCHES table ---
-        cursor.execute(
-            """
-            SELECT IP, BRAND, SNMP, SNMP_PORT
-            FROM SWITCHES
-            WHERE ID = :id
-        """,
-            {"id": switch_id},
+        cursor.execute("SELECT IP, BRAND, SNMP, SNMP_PORT FROM SWITCHES WHERE ID = :id", {"id": switch_id},
         )
 
         result = cursor.fetchone()
