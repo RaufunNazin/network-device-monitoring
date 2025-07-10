@@ -1,6 +1,6 @@
 import asyncio
 import json
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Path
 from ..utils import validate_brand, validate_branch, get_switch_info
 from typing import Optional
 import sys
